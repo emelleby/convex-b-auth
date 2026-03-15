@@ -5,7 +5,33 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function LoginForm2() {
+export interface LoginSignupProps {
+	email: string;
+	onEmailChange: (value: string) => void;
+	password: string;
+	onPasswordChange: (value: string) => void;
+	name?: string;
+	onNameChange?: (value: string) => void;
+	isSignUp: boolean;
+	onToggleMode: () => void;
+	onSubmit: (e: React.FormEvent) => void;
+	isLoading: boolean;
+	error: string | null;
+}
+
+export default function LoginSignupForm({
+	email,
+	onEmailChange,
+	password,
+	onPasswordChange,
+	name,
+	onNameChange,
+	isSignUp,
+	onToggleMode,
+	onSubmit,
+	isLoading,
+	error,
+}: LoginSignupProps) {
 	return (
 		<div className="rose-gradient bg-background relative min-h-screen overflow-hidden">
 			<div className="from-background absolute -top-10 left-0 h-1/2 w-full rounded-b-full bg-gradient-to-b to-transparent blur"></div>
@@ -18,29 +44,18 @@ export default function LoginForm2() {
 					transition={{ duration: 0.8, ease: "easeOut" }}
 				>
 					<div className="space-y-6">
-						<motion.div
-							initial={{ opacity: 0, scale: 0.8 }}
-							animate={{ opacity: 1, scale: 1 }}
-							transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+						<motion.h1
+							className="text-2xl md:text-4xl font-bold leading-tight tracking-tight"
+							initial={{ opacity: 0, y: 20 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
 						>
-							<img
-								src="https://i.postimg.cc/j5p27Zhp/roblox-logo.webp"
-								alt="Illustration"
-								className="mx-auto h-auto w-full md:w-90"
-							/>
-						</motion.div>
-						{/* <motion.h1
-              className="text-2xl md:text-4xl font-bold leading-tight tracking-tight"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
-            >
-              The make money app
-            </motion.h1> */}
+							ILCA Community
+						</motion.h1>
 					</div>
 				</motion.div>
 
-				{/* Right Side - Login Form */}
+				{/* Right Side - Login/Signup Form */}
 				<motion.div
 					className="flex flex-1 items-center justify-center p-8"
 					initial={{ opacity: 0, x: 50 }}
@@ -54,7 +69,7 @@ export default function LoginForm2() {
 					>
 						<Card className="border-border/70 bg-card/20 w-full max-w-md shadow-[0_10px_26px_#e0e0e0a1] backdrop-blur-lg dark:shadow-none">
 							<CardContent className="space-y-6 p-8">
-								{/* Logo and Header */}
+								{/* Header */}
 								<motion.div
 									className="space-y-4 text-center"
 									initial={{ opacity: 0, y: 20 }}
@@ -63,49 +78,124 @@ export default function LoginForm2() {
 								>
 									<div className="flex items-center justify-center space-x-2">
 										<span className="text-2xl font-bold tracking-tight md:text-4xl">
-											Login
+											{isSignUp ? "Sign Up" : "Login"}
 										</span>
 									</div>
 									<p className="text-muted-foreground text-sm">
-										Create an account or log in to discover Purgions and find
-										ways to make money.
+										{isSignUp
+											? "Create an account to get started."
+											: "Sign in to your account."}
 									</p>
 								</motion.div>
 
-								{/* Email Input */}
-								<motion.div
-									className="space-y-2"
-									initial={{ opacity: 0, y: 20 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
-								>
-									<Label htmlFor="email">Email</Label>
-									<Input id="email" type="email" />
-								</motion.div>
+								<form onSubmit={onSubmit} className="space-y-4">
+									{/* Name Input (signup only) */}
+									{isSignUp && (
+										<motion.div
+											className="space-y-2"
+											initial={{ opacity: 0, y: 20 }}
+											animate={{ opacity: 1, y: 0 }}
+											transition={{
+												duration: 0.5,
+												delay: 0.45,
+												ease: "easeOut",
+											}}
+										>
+											<Label htmlFor="name">Name</Label>
+											<Input
+												id="name"
+												type="text"
+												value={name ?? ""}
+												onChange={(e) => onNameChange?.(e.target.value)}
+												required
+											/>
+										</motion.div>
+									)}
 
-								<motion.div
-									className="space-y-2"
-									initial={{ opacity: 0, y: 20 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
-								>
-									<Label htmlFor="password">Password</Label>
-									<Input
-										id="password"
-										type="password"
-										className="border-border border"
-									/>
-								</motion.div>
+									{/* Email Input */}
+									<motion.div
+										className="space-y-2"
+										initial={{ opacity: 0, y: 20 }}
+										animate={{ opacity: 1, y: 0 }}
+										transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
+									>
+										<Label htmlFor="email">Email</Label>
+										<Input
+											id="email"
+											type="email"
+											value={email}
+											onChange={(e) => onEmailChange(e.target.value)}
+											required
+										/>
+									</motion.div>
 
-								{/* Continue Button */}
+									{/* Password Input */}
+									<motion.div
+										className="space-y-2"
+										initial={{ opacity: 0, y: 20 }}
+										animate={{ opacity: 1, y: 0 }}
+										transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
+									>
+										<Label htmlFor="password">Password</Label>
+										<Input
+											id="password"
+											type="password"
+											className="border-border border"
+											value={password}
+											onChange={(e) => onPasswordChange(e.target.value)}
+											required
+											minLength={8}
+										/>
+									</motion.div>
+
+									{/* Error message */}
+									{error && (
+										<motion.p
+											className="text-destructive text-sm text-center"
+											initial={{ opacity: 0 }}
+											animate={{ opacity: 1 }}
+										>
+											{error}
+										</motion.p>
+									)}
+
+									{/* Submit Button */}
+									<motion.div
+										initial={{ opacity: 0, y: 20 }}
+										animate={{ opacity: 1, y: 0 }}
+										transition={{ duration: 0.5, delay: 0.7, ease: "easeOut" }}
+										whileHover={{ scale: 1.02 }}
+										whileTap={{ scale: 0.98 }}
+									>
+										<Button
+											type="submit"
+											className="w-full"
+											disabled={isLoading}
+										>
+											{isLoading ? (
+												<span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+											) : null}
+											{isSignUp ? "Sign Up" : "Continue"}
+										</Button>
+									</motion.div>
+								</form>
+
+								{/* Toggle mode */}
 								<motion.div
-									initial={{ opacity: 0, y: 20 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ duration: 0.5, delay: 0.7, ease: "easeOut" }}
-									whileHover={{ scale: 1.02 }}
-									whileTap={{ scale: 0.98 }}
+									className="text-center"
+									initial={{ opacity: 0 }}
+									animate={{ opacity: 1 }}
+									transition={{ duration: 0.5, delay: 0.8, ease: "easeOut" }}
 								>
-									<Button className="w-full">Continue</Button>
+									<button
+										type="button"
+										onClick={onToggleMode}
+										className="text-muted-foreground hover:text-primary text-sm underline"
+									>
+										{isSignUp
+											? "Already have an account? Sign In"
+											: "Don't have an account? Sign Up"}
+									</button>
 								</motion.div>
 
 								{/* Divider */}
@@ -113,7 +203,7 @@ export default function LoginForm2() {
 									className="relative"
 									initial={{ opacity: 0 }}
 									animate={{ opacity: 1 }}
-									transition={{ duration: 0.5, delay: 0.8, ease: "easeOut" }}
+									transition={{ duration: 0.5, delay: 0.85, ease: "easeOut" }}
 								>
 									<div className="absolute inset-0 flex items-center">
 										<div className="border-border w-full border-t"></div>

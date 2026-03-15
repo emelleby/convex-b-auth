@@ -16,6 +16,7 @@ import { Route as DemoTableRouteImport } from './routes/demo/table'
 import { Route as DemoStorybookRouteImport } from './routes/demo/storybook'
 import { Route as DemoStoreRouteImport } from './routes/demo/store'
 import { Route as DemoOrpcTodoRouteImport } from './routes/demo/orpc-todo'
+import { Route as DemoLoginRouteImport } from './routes/demo/login'
 import { Route as DemoI18nRouteImport } from './routes/demo.i18n'
 import { Route as DemoConvexRouteImport } from './routes/demo/convex'
 import { Route as DemoAuthRouteImport } from './routes/demo/auth'
@@ -58,6 +59,11 @@ const DemoStoreRoute = DemoStoreRouteImport.update({
 const DemoOrpcTodoRoute = DemoOrpcTodoRouteImport.update({
   id: '/demo/orpc-todo',
   path: '/demo/orpc-todo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoLoginRoute = DemoLoginRouteImport.update({
+  id: '/demo/login',
+  path: '/demo/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoI18nRoute = DemoI18nRouteImport.update({
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/demo/auth': typeof DemoAuthRoute
   '/demo/convex': typeof DemoConvexRoute
   '/demo/i18n': typeof DemoI18nRoute
+  '/demo/login': typeof DemoLoginRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
   '/demo/store': typeof DemoStoreRoute
   '/demo/storybook': typeof DemoStorybookRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/demo/auth': typeof DemoAuthRoute
   '/demo/convex': typeof DemoConvexRoute
   '/demo/i18n': typeof DemoI18nRoute
+  '/demo/login': typeof DemoLoginRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
   '/demo/store': typeof DemoStoreRoute
   '/demo/storybook': typeof DemoStorybookRoute
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/demo/auth': typeof DemoAuthRoute
   '/demo/convex': typeof DemoConvexRoute
   '/demo/i18n': typeof DemoI18nRoute
+  '/demo/login': typeof DemoLoginRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
   '/demo/store': typeof DemoStoreRoute
   '/demo/storybook': typeof DemoStorybookRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/demo/auth'
     | '/demo/convex'
     | '/demo/i18n'
+    | '/demo/login'
     | '/demo/orpc-todo'
     | '/demo/store'
     | '/demo/storybook'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/demo/auth'
     | '/demo/convex'
     | '/demo/i18n'
+    | '/demo/login'
     | '/demo/orpc-todo'
     | '/demo/store'
     | '/demo/storybook'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/demo/auth'
     | '/demo/convex'
     | '/demo/i18n'
+    | '/demo/login'
     | '/demo/orpc-todo'
     | '/demo/store'
     | '/demo/storybook'
@@ -214,6 +226,7 @@ export interface RootRouteChildren {
   DemoAuthRoute: typeof DemoAuthRoute
   DemoConvexRoute: typeof DemoConvexRoute
   DemoI18nRoute: typeof DemoI18nRoute
+  DemoLoginRoute: typeof DemoLoginRoute
   DemoOrpcTodoRoute: typeof DemoOrpcTodoRoute
   DemoStoreRoute: typeof DemoStoreRoute
   DemoStorybookRoute: typeof DemoStorybookRoute
@@ -274,6 +287,13 @@ declare module '@tanstack/react-router' {
       path: '/demo/orpc-todo'
       fullPath: '/demo/orpc-todo'
       preLoaderRoute: typeof DemoOrpcTodoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/login': {
+      id: '/demo/login'
+      path: '/demo/login'
+      fullPath: '/demo/login'
+      preLoaderRoute: typeof DemoLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/i18n': {
@@ -342,6 +362,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoAuthRoute: DemoAuthRoute,
   DemoConvexRoute: DemoConvexRoute,
   DemoI18nRoute: DemoI18nRoute,
+  DemoLoginRoute: DemoLoginRoute,
   DemoOrpcTodoRoute: DemoOrpcTodoRoute,
   DemoStoreRoute: DemoStoreRoute,
   DemoStorybookRoute: DemoStorybookRoute,
