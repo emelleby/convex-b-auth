@@ -1,0 +1,28 @@
+{
+  "projectName": "convex-auth",
+  "mode": "file-router",
+  "typescript": true,
+  "tailwind": true,
+  "packageManager": "bun",
+  "git": true,
+  "install": true,
+  "addOnOptions": {},
+  "includeExamples": true,
+  "envVarValues": {},
+  "routerOnly": false,
+  "version": 1,
+  "framework": "react",
+  "chosenAddOns": [
+    "cloudflare",
+    "form",
+    "table",
+    "store",
+    "tanstack-query",
+    "convex",
+    "oRPC",
+    "paraglide",
+    "compiler",
+    "storybook",
+    "biome"
+  ]
+}
