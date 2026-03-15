@@ -1,20 +1,31 @@
-import { ConvexProvider } from 'convex/react'
-import { ConvexQueryClient } from '@convex-dev/react-query'
+import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
+import { ConvexQueryClient } from "@convex-dev/react-query";
+import { authClient } from "@/lib/auth-client";
 
-const CONVEX_URL = (import.meta as any).env.VITE_CONVEX_URL
+const CONVEX_URL = (import.meta as any).env.VITE_CONVEX_URL;
 if (!CONVEX_URL) {
-  console.error('missing envar CONVEX_URL')
+	console.error("missing envar CONVEX_URL");
 }
-const convexQueryClient = new ConvexQueryClient(CONVEX_URL)
+
+// Create ConvexQueryClient with expectAuth for proper SSR support
+export const convexQueryClient = new ConvexQueryClient(CONVEX_URL, {
+	expectAuth: true,
+});
 
 export default function AppConvexProvider({
-  children,
+	children,
+	initialToken,
 }: {
-  children: React.ReactNode
+	children: React.ReactNode;
+	initialToken?: string | null;
 }) {
-  return (
-    <ConvexProvider client={convexQueryClient.convexClient}>
-      {children}
-    </ConvexProvider>
-  )
+	return (
+		<ConvexBetterAuthProvider
+			client={convexQueryClient.convexClient}
+			authClient={authClient}
+			initialToken={initialToken}
+		>
+			{children}
+		</ConvexBetterAuthProvider>
+	);
 }

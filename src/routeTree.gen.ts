@@ -18,10 +18,12 @@ import { Route as DemoStoreRouteImport } from './routes/demo/store'
 import { Route as DemoOrpcTodoRouteImport } from './routes/demo/orpc-todo'
 import { Route as DemoI18nRouteImport } from './routes/demo.i18n'
 import { Route as DemoConvexRouteImport } from './routes/demo/convex'
+import { Route as DemoAuthRouteImport } from './routes/demo/auth'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
@@ -68,6 +70,11 @@ const DemoConvexRoute = DemoConvexRouteImport.update({
   path: '/demo/convex',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoAuthRoute = DemoAuthRouteImport.update({
+  id: '/demo/auth',
+  path: '/demo/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
   path: '/api/$',
@@ -88,11 +95,17 @@ const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
   path: '/api/rpc/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/api/$': typeof ApiSplatRoute
+  '/demo/auth': typeof DemoAuthRoute
   '/demo/convex': typeof DemoConvexRoute
   '/demo/i18n': typeof DemoI18nRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
@@ -100,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/demo/storybook': typeof DemoStorybookRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
@@ -108,6 +122,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/api/$': typeof ApiSplatRoute
+  '/demo/auth': typeof DemoAuthRoute
   '/demo/convex': typeof DemoConvexRoute
   '/demo/i18n': typeof DemoI18nRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
@@ -115,6 +130,7 @@ export interface FileRoutesByTo {
   '/demo/storybook': typeof DemoStorybookRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
@@ -124,6 +140,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/api/$': typeof ApiSplatRoute
+  '/demo/auth': typeof DemoAuthRoute
   '/demo/convex': typeof DemoConvexRoute
   '/demo/i18n': typeof DemoI18nRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
@@ -131,6 +148,7 @@ export interface FileRoutesById {
   '/demo/storybook': typeof DemoStorybookRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
@@ -141,6 +159,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/api/$'
+    | '/demo/auth'
     | '/demo/convex'
     | '/demo/i18n'
     | '/demo/orpc-todo'
@@ -148,6 +167,7 @@ export interface FileRouteTypes {
     | '/demo/storybook'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/api/auth/$'
     | '/api/rpc/$'
     | '/demo/form/address'
     | '/demo/form/simple'
@@ -156,6 +176,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/api/$'
+    | '/demo/auth'
     | '/demo/convex'
     | '/demo/i18n'
     | '/demo/orpc-todo'
@@ -163,6 +184,7 @@ export interface FileRouteTypes {
     | '/demo/storybook'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/api/auth/$'
     | '/api/rpc/$'
     | '/demo/form/address'
     | '/demo/form/simple'
@@ -171,6 +193,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/api/$'
+    | '/demo/auth'
     | '/demo/convex'
     | '/demo/i18n'
     | '/demo/orpc-todo'
@@ -178,6 +201,7 @@ export interface FileRouteTypes {
     | '/demo/storybook'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/api/auth/$'
     | '/api/rpc/$'
     | '/demo/form/address'
     | '/demo/form/simple'
@@ -187,6 +211,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   ApiSplatRoute: typeof ApiSplatRoute
+  DemoAuthRoute: typeof DemoAuthRoute
   DemoConvexRoute: typeof DemoConvexRoute
   DemoI18nRoute: typeof DemoI18nRoute
   DemoOrpcTodoRoute: typeof DemoOrpcTodoRoute
@@ -194,6 +219,7 @@ export interface RootRouteChildren {
   DemoStorybookRoute: typeof DemoStorybookRoute
   DemoTableRoute: typeof DemoTableRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
   DemoFormAddressRoute: typeof DemoFormAddressRoute
   DemoFormSimpleRoute: typeof DemoFormSimpleRoute
@@ -264,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoConvexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo/auth': {
+      id: '/demo/auth'
+      path: '/demo/auth'
+      fullPath: '/demo/auth'
+      preLoaderRoute: typeof DemoAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/$': {
       id: '/api/$'
       path: '/api/$'
@@ -292,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRpcSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -299,6 +339,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   ApiSplatRoute: ApiSplatRoute,
+  DemoAuthRoute: DemoAuthRoute,
   DemoConvexRoute: DemoConvexRoute,
   DemoI18nRoute: DemoI18nRoute,
   DemoOrpcTodoRoute: DemoOrpcTodoRoute,
@@ -306,6 +347,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoStorybookRoute: DemoStorybookRoute,
   DemoTableRoute: DemoTableRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
   DemoFormAddressRoute: DemoFormAddressRoute,
   DemoFormSimpleRoute: DemoFormSimpleRoute,
