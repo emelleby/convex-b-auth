@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -90,27 +90,41 @@ export default function LoginSignupForm({
 
 								<form onSubmit={onSubmit} className="space-y-4">
 									{/* Name Input (signup only) */}
-									{isSignUp && (
-										<motion.div
-											className="space-y-2"
-											initial={{ opacity: 0, y: 20 }}
-											animate={{ opacity: 1, y: 0 }}
-											transition={{
-												duration: 0.5,
-												delay: 0.45,
-												ease: "easeOut",
-											}}
-										>
-											<Label htmlFor="name">Name</Label>
-											<Input
-												id="name"
-												type="text"
-												value={name ?? ""}
-												onChange={(e) => onNameChange?.(e.target.value)}
-												required
-											/>
-										</motion.div>
-									)}
+									<AnimatePresence mode="wait">
+										{isSignUp && (
+											<motion.div
+												key="name-field"
+												className="space-y-2"
+												initial={{ opacity: 0, y: 20 }}
+												animate={{
+													opacity: 1,
+													y: 0,
+													transition: {
+														duration: 0.5,
+														delay: 0.45,
+														ease: "easeOut",
+													},
+												}}
+												exit={{
+													opacity: 0,
+													y: 20,
+													transition: {
+														duration: 0.5,
+														ease: "easeOut",
+													},
+												}}
+											>
+												<Label htmlFor="name">Name</Label>
+												<Input
+													id="name"
+													type="text"
+													value={name ?? ""}
+													onChange={(e) => onNameChange?.(e.target.value)}
+													required
+												/>
+											</motion.div>
+										)}
+									</AnimatePresence>
 
 									{/* Email Input */}
 									<motion.div
