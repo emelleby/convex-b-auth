@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "shadcn-setup-and-theming",
+  "owner": "agentivecity",
+  "repo": "skillfactory",
+  "path": ".claude/skills/shadcn-setup-and-theming",
+  "branch": "main",
+  "sha": "520a29355219442e318bda061c2abfcaab07a385",
+  "source": "manual"
+}
