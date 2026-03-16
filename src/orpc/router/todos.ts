@@ -1,7 +1,7 @@
+import { api } from "¤/_generated/api";
 import { os } from "@orpc/server";
 import * as z from "zod";
 import { fetchAuthMutation, fetchAuthQuery } from "#/lib/auth-server";
-import { api } from "../../../convex/_generated/api";
 
 export const listTodos = os.input(z.object({})).handler(async () => {
 	const todos = await fetchAuthQuery(api.todos.list);

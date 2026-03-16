@@ -18,7 +18,21 @@ const config = defineConfig({
 		paraglideVitePlugin({
 			project: "./project.inlang",
 			outdir: "./src/paraglide",
-			strategy: ["url", "baseLocale"],
+			outputStructure: "message-modules",
+			cookieName: "PARAGLIDE_LOCALE",
+			strategy: ["url", "cookie", "baseLocale"],
+
+			urlPatterns: [
+				{
+					pattern: "/:path(.*)?",
+					localized: [
+						["de", "/de/:path(.*)?"],
+						["no", "/no/:path(.*)?"],
+						// base locale last — least specific match
+						["en", "/:path(.*)?"],
+					],
+				},
+			],
 		}),
 		cloudflare({ viteEnvironment: { name: "ssr" } }),
 		tsconfigPaths({ projects: ["./tsconfig.json"] }),

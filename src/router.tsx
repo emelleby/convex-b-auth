@@ -1,7 +1,9 @@
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
 import { DefaultCatchBoundary } from "./components/DefaultCatchBoundary";
 import { NotFound } from "./components/NotFound";
 import { getContext } from "./integrations/tanstack-query/root-provider";
+import { deLocalizeUrl, localizeUrl } from "./paraglide/runtime";
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
@@ -14,6 +16,16 @@ export function getRouter() {
 		scrollRestoration: true,
 		defaultPreload: "intent",
 		defaultPreloadStaleTime: 0,
+		rewrite: {
+			input: ({ url }) => deLocalizeUrl(url),
+			output: ({ url }) => localizeUrl(url),
+		},
+		defaultPendingComponent: () => (
+			<div className="p-2 text-2xl">
+				<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+				Loading...
+			</div>
+		),
 	});
 
 	return router;

@@ -5,12 +5,13 @@ import {
 	createRootRouteWithContext,
 	HeadContent,
 	Outlet,
+	redirect,
 	Scripts,
 	useRouteContext,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
-import { getLocale } from "#/paraglide/runtime";
+import { getLocale, shouldRedirect } from "#/paraglide/runtime";
 import { getToken } from "@/lib/auth-server";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
@@ -34,9 +35,16 @@ const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getIte
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
 	beforeLoad: async (ctx) => {
-		// Set locale for SSR
+		// Handle locale redirect on client-side navigation
 		if (typeof document !== "undefined") {
 			document.documentElement.setAttribute("lang", getLocale());
+
+			const decision = await shouldRedirect({
+				url: window.location.href,
+			});
+			if (decision.redirectUrl) {
+				throw redirect({ href: decision.redirectUrl.href });
+			}
 		}
 
 		// Get auth token for SSR

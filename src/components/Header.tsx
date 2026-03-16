@@ -79,66 +79,66 @@ export default function Header() {
 							Demos
 						</summary>
 						<div className="mt-2 min-w-56 rounded-xl border border-[var(--line)] bg-[var(--header-bg)] p-2 shadow-lg sm:absolute sm:right-0">
-							<a
-								href="/demo/form/simple"
+							<Link
+								to="/demo/form/simple"
 								className="block rounded-lg px-3 py-2 text-sm text-[var(--sea-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
 							>
 								Simple Form
-							</a>
-							<a
-								href="/demo/form/address"
+							</Link>
+							<Link
+								to="/demo/form/address"
 								className="block rounded-lg px-3 py-2 text-sm text-[var(--sea-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
 							>
 								Address Form
-							</a>
-							<a
-								href="/demo/table"
+							</Link>
+							<Link
+								to="/demo/table"
 								className="block rounded-lg px-3 py-2 text-sm text-[var(--sea-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
 							>
 								TanStack Table
-							</a>
-							<a
-								href="/demo/store"
+							</Link>
+							<Link
+								to="/demo/store"
 								className="block rounded-lg px-3 py-2 text-sm text-[var(--sea-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
 							>
 								Store
-							</a>
-							<a
-								href="/demo/tanstack-query"
+							</Link>
+							<Link
+								to="/demo/tanstack-query"
 								className="block rounded-lg px-3 py-2 text-sm text-[var(--sea-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
 							>
 								TanStack Query
-							</a>
-							<a
-								href="/demo/convex"
+							</Link>
+							<Link
+								to="/demo/convex"
 								className="block rounded-lg px-3 py-2 text-sm text-[var(--sea-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
 							>
 								Convex
-							</a>
-							<a
-								href="/demo/auth"
+							</Link>
+							<Link
+								to="/demo/auth"
 								className="block rounded-lg px-3 py-2 text-sm text-[var(--sea-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
 							>
 								Auth Demo
-							</a>
-							<a
-								href="/demo/orpc-todo"
+							</Link>
+							<Link
+								to="/demo/orpc-todo"
 								className="block rounded-lg px-3 py-2 text-sm text-[var(--sea-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
 							>
 								oRPC Todo
-							</a>
-							<a
-								href="/demo/i18n"
+							</Link>
+							<Link
+								to="/demo/i18n"
 								className="block rounded-lg px-3 py-2 text-sm text-[var(--sea-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
 							>
 								I18n example
-							</a>
-							<a
-								href="/demo/storybook"
+							</Link>
+							<Link
+								to="/demo/storybook"
 								className="block rounded-lg px-3 py-2 text-sm text-[var(--sea-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
 							>
 								Storybook
-							</a>
+							</Link>
 						</div>
 					</details>
 				</div>
