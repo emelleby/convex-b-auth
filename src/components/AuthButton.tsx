@@ -1,8 +1,5 @@
-import { convexQuery } from "@convex-dev/react-query";
-
 import { Link } from "@tanstack/react-router";
-import { Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
 import { authClient } from "@/lib/auth-client";
 
 export default function AuthButton() {
