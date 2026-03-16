@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
@@ -16,16 +17,21 @@ import { Route as DemoTableRouteImport } from './routes/demo/table'
 import { Route as DemoStorybookRouteImport } from './routes/demo/storybook'
 import { Route as DemoStoreRouteImport } from './routes/demo/store'
 import { Route as DemoOrpcTodoRouteImport } from './routes/demo/orpc-todo'
-import { Route as DemoLoginRouteImport } from './routes/demo/login'
 import { Route as DemoI18nRouteImport } from './routes/demo.i18n'
 import { Route as DemoConvexRouteImport } from './routes/demo/convex'
 import { Route as DemoAuthRouteImport } from './routes/demo/auth'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as AuthedAppIndexRouteImport } from './routes/_authed/app/index'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -61,11 +67,6 @@ const DemoOrpcTodoRoute = DemoOrpcTodoRouteImport.update({
   path: '/demo/orpc-todo',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemoLoginRoute = DemoLoginRouteImport.update({
-  id: '/demo/login',
-  path: '/demo/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DemoI18nRoute = DemoI18nRouteImport.update({
   id: '/demo/i18n',
   path: '/demo/i18n',
@@ -84,6 +85,11 @@ const DemoAuthRoute = DemoAuthRouteImport.update({
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
   path: '/api/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedAppIndexRoute = AuthedAppIndexRouteImport.update({
+  id: '/_authed/app/',
+  path: '/app/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoFormSimpleRoute = DemoFormSimpleRouteImport.update({
@@ -110,11 +116,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/login': typeof LoginRoute
   '/api/$': typeof ApiSplatRoute
   '/demo/auth': typeof DemoAuthRoute
   '/demo/convex': typeof DemoConvexRoute
   '/demo/i18n': typeof DemoI18nRoute
-  '/demo/login': typeof DemoLoginRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
   '/demo/store': typeof DemoStoreRoute
   '/demo/storybook': typeof DemoStorybookRoute
@@ -124,15 +130,16 @@ export interface FileRoutesByFullPath {
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/app/': typeof AuthedAppIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/login': typeof LoginRoute
   '/api/$': typeof ApiSplatRoute
   '/demo/auth': typeof DemoAuthRoute
   '/demo/convex': typeof DemoConvexRoute
   '/demo/i18n': typeof DemoI18nRoute
-  '/demo/login': typeof DemoLoginRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
   '/demo/store': typeof DemoStoreRoute
   '/demo/storybook': typeof DemoStorybookRoute
@@ -142,16 +149,17 @@ export interface FileRoutesByTo {
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/app': typeof AuthedAppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/login': typeof LoginRoute
   '/api/$': typeof ApiSplatRoute
   '/demo/auth': typeof DemoAuthRoute
   '/demo/convex': typeof DemoConvexRoute
   '/demo/i18n': typeof DemoI18nRoute
-  '/demo/login': typeof DemoLoginRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
   '/demo/store': typeof DemoStoreRoute
   '/demo/storybook': typeof DemoStorybookRoute
@@ -161,17 +169,18 @@ export interface FileRoutesById {
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/_authed/app/': typeof AuthedAppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/about'
+    | '/login'
     | '/api/$'
     | '/demo/auth'
     | '/demo/convex'
     | '/demo/i18n'
-    | '/demo/login'
     | '/demo/orpc-todo'
     | '/demo/store'
     | '/demo/storybook'
@@ -181,15 +190,16 @@ export interface FileRouteTypes {
     | '/api/rpc/$'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
+    | '/login'
     | '/api/$'
     | '/demo/auth'
     | '/demo/convex'
     | '/demo/i18n'
-    | '/demo/login'
     | '/demo/orpc-todo'
     | '/demo/store'
     | '/demo/storybook'
@@ -199,15 +209,16 @@ export interface FileRouteTypes {
     | '/api/rpc/$'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/app'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/login'
     | '/api/$'
     | '/demo/auth'
     | '/demo/convex'
     | '/demo/i18n'
-    | '/demo/login'
     | '/demo/orpc-todo'
     | '/demo/store'
     | '/demo/storybook'
@@ -217,16 +228,17 @@ export interface FileRouteTypes {
     | '/api/rpc/$'
     | '/demo/form/address'
     | '/demo/form/simple'
+    | '/_authed/app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  LoginRoute: typeof LoginRoute
   ApiSplatRoute: typeof ApiSplatRoute
   DemoAuthRoute: typeof DemoAuthRoute
   DemoConvexRoute: typeof DemoConvexRoute
   DemoI18nRoute: typeof DemoI18nRoute
-  DemoLoginRoute: typeof DemoLoginRoute
   DemoOrpcTodoRoute: typeof DemoOrpcTodoRoute
   DemoStoreRoute: typeof DemoStoreRoute
   DemoStorybookRoute: typeof DemoStorybookRoute
@@ -236,10 +248,18 @@ export interface RootRouteChildren {
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
   DemoFormAddressRoute: typeof DemoFormAddressRoute
   DemoFormSimpleRoute: typeof DemoFormSimpleRoute
+  AuthedAppIndexRoute: typeof AuthedAppIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -289,13 +309,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoOrpcTodoRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demo/login': {
-      id: '/demo/login'
-      path: '/demo/login'
-      fullPath: '/demo/login'
-      preLoaderRoute: typeof DemoLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/demo/i18n': {
       id: '/demo/i18n'
       path: '/demo/i18n'
@@ -322,6 +335,13 @@ declare module '@tanstack/react-router' {
       path: '/api/$'
       fullPath: '/api/$'
       preLoaderRoute: typeof ApiSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authed/app/': {
+      id: '/_authed/app/'
+      path: '/app'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AuthedAppIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/form/simple': {
@@ -358,11 +378,11 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  LoginRoute: LoginRoute,
   ApiSplatRoute: ApiSplatRoute,
   DemoAuthRoute: DemoAuthRoute,
   DemoConvexRoute: DemoConvexRoute,
   DemoI18nRoute: DemoI18nRoute,
-  DemoLoginRoute: DemoLoginRoute,
   DemoOrpcTodoRoute: DemoOrpcTodoRoute,
   DemoStoreRoute: DemoStoreRoute,
   DemoStorybookRoute: DemoStorybookRoute,
@@ -372,6 +392,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiRpcSplatRoute: ApiRpcSplatRoute,
   DemoFormAddressRoute: DemoFormAddressRoute,
   DemoFormSimpleRoute: DemoFormSimpleRoute,
+  AuthedAppIndexRoute: AuthedAppIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

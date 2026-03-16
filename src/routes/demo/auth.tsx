@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { Check, Plus, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,20 +11,17 @@ import { api } from "../../../convex/_generated/api";
 export const Route = createFileRoute("/demo/auth")({
 	ssr: false,
 	component: AuthProtectedTodos,
+	// Redirect unauthenticated users to login page
+	beforeLoad: ({ context }) => {
+		if (!context.isAuthenticated) {
+			throw redirect({ to: "/login" });
+		}
+	},
 });
 
 function AuthProtectedTodos() {
 	const session = authClient.useSession();
-	const navigate = useNavigate();
-	const isAuthenticated = !!session.data?.user;
 	const isPending = session.isPending;
-
-	// Redirect unauthenticated users to login page
-	useEffect(() => {
-		if (!isPending && !isAuthenticated) {
-			navigate({ to: "/demo/login" });
-		}
-	}, [isAuthenticated, isPending, navigate]);
 
 	if (isPending) {
 		return (
@@ -32,11 +29,6 @@ function AuthProtectedTodos() {
 				<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
 			</div>
 		);
-	}
-
-	// Don't render content if not authenticated (will redirect)
-	if (!isAuthenticated) {
-		return null;
 	}
 
 	return (

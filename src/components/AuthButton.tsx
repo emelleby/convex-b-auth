@@ -34,14 +34,14 @@ export default function AuthButton() {
 	return (
 		<div className="flex items-center gap-2">
 			<Link
-				to="/demo/login"
+				to="/login"
 				search={{ mode: "signup" }}
 				className="rounded-lg border border-(--line) bg-(--chip-bg) px-3 py-1.5 text-sm font-medium text-(--sea-ink) no-underline transition hover:bg-(--link-bg-hover)"
 			>
 				Sign Up
 			</Link>
 			<Link
-				to="/demo/login"
+				to="/login"
 				search={{ mode: "signin" }}
 				className="rounded-lg border border-(--sea-ink) bg-(--sea-ink) px-3 py-1.5 text-sm font-medium text-white no-underline transition hover:opacity-90"
 			>

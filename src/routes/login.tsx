@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import LoginSignupForm from "@/components/mvpblocks/login-signup";
 import { authClient } from "@/lib/auth-client";
-import { api } from "../../../convex/_generated/api";
+import { api } from "../../convex/_generated/api";
 
 const loginSearchSchema = z.object({
 	mode: z.enum(["signup", "signin"]).optional(),
 });
 
-export const Route = createFileRoute("/demo/login")({
+export const Route = createFileRoute("/login")({
 	ssr: false,
 	validateSearch: loginSearchSchema,
 	component: LoginPage,
@@ -41,12 +41,32 @@ function LoginPage() {
 		}
 	}, [search.mode]);
 
-	// Redirect authenticated users away from login page
-	useEffect(() => {
-		if (isAuthenticated && !isPending) {
-			navigate({ to: "/demo/auth" });
+	// Handle successful authentication - sync user and navigate
+	const handleAuthSuccess = async (userData: {
+		email: string;
+		name: string | null;
+		id: string;
+	}) => {
+		try {
+			await syncUser({
+				email: userData.email,
+				name: userData.name ?? (name || email.split("@")[0]),
+				betterAuthId: userData.id,
+				isSignUp,
+			});
+			// Use TanStack Router's navigate for declarative navigation
+			await navigate({ to: "/app" });
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Failed to sync user data");
+			setIsLoading(false);
 		}
-	}, [isAuthenticated, isPending, navigate]);
+	};
+
+	// Handle authentication errors
+	const handleAuthError = (errorMessage: string) => {
+		setError(errorMessage);
+		setIsLoading(false);
+	};
 
 	const handleAuth = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -60,35 +80,28 @@ function LoginPage() {
 					password,
 					name: name || email.split("@")[0],
 				});
+
 				if (result.error) {
-					setError(result.error.message || "Sign up failed");
+					handleAuthError(result.error.message || "Sign up failed");
 				} else if (result.data?.user) {
-					await syncUser({
-						email: result.data.user.email,
-						name: result.data.user.name ?? (name || email.split("@")[0]),
-						betterAuthId: result.data.user.id,
-						isSignUp: true,
-					});
-					// Navigation will happen via useEffect
+					await handleAuthSuccess(result.data.user);
 				}
 			} else {
-				const result = await authClient.signIn.email({ email, password });
+				const result = await authClient.signIn.email({
+					email,
+					password,
+				});
+
 				if (result.error) {
-					setError(result.error.message || "Sign in failed");
+					handleAuthError(result.error.message || "Sign in failed");
 				} else if (result.data?.user) {
-					await syncUser({
-						email: result.data.user.email,
-						name: result.data.user.name ?? email.split("@")[0],
-						betterAuthId: result.data.user.id,
-						isSignUp: false,
-					});
-					// Navigation will happen via useEffect
+					await handleAuthSuccess(result.data.user);
 				}
 			}
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Authentication failed");
-		} finally {
-			setIsLoading(false);
+			handleAuthError(
+				err instanceof Error ? err.message : "Authentication failed",
+			);
 		}
 	};
 
