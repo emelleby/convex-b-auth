@@ -11,4 +11,7 @@ export default defineSchema({
     text: v.string(),
     completed: v.boolean(),
   }),
+  people: defineTable({
+    name: v.string(),
+  }),
 })
