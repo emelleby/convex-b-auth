@@ -1,9 +1,24 @@
+import { convexQuery } from "@convex-dev/react-query";
+
 import { Link } from "@tanstack/react-router";
+import { Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
 export default function AuthButton() {
 	const session = authClient.useSession();
 	const isPending = session.isPending;
+	const handleSignOut = async () => {
+		await authClient.signOut({
+			fetchOptions: {
+				onSuccess: async () => {
+					// for now, recommend reloading on sign out as Convex client
+					// expectAuth only works on initial load
+					location.reload();
+				},
+			},
+		});
+	};
 
 	if (isPending) {
 		return (
@@ -18,11 +33,14 @@ export default function AuthButton() {
 		return (
 			<div className="flex items-center gap-2">
 				<span className="text-sm text-(--sea-ink-soft)">
-					{session.data.user.email}
+					{
+						session.data.user.email
+						// user.data?.email
+					}
 				</span>
 				<button
 					type="button"
-					onClick={() => authClient.signOut()}
+					onClick={() => handleSignOut()}
 					className="rounded-lg border border-(--line) bg-(--chip-bg) px-3 py-1.5 text-sm font-medium text-(--sea-ink) transition hover:bg-(--link-bg-hover)"
 				>
 					Sign Out
