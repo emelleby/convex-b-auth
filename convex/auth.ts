@@ -38,7 +38,15 @@ const createAuthOptions = (ctx: GenericCtx<DataModel>) => ({
         enabled: true,
       },
       // Better Auth roles are defined as a simple list if not using permissions plugin
-      // roles: ['owner', 'admin', 'member', 'team-member'],
+      // roles: ['owner', 'admin', 'member', 'team-member'],      schema: {
+      teamMember: {
+        additionalFields: {
+          role: {
+            type: 'string',
+            required: false,
+          },
+        },
+      },
     }),
   ],
 })

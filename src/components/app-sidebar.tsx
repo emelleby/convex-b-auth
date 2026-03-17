@@ -2,11 +2,13 @@ import {
 	AudioWaveform,
 	BookOpen,
 	Bot,
+	ClubIcon,
 	Command,
 	Frame,
 	GalleryVerticalEnd,
 	Map,
 	PieChart,
+	SeparatorHorizontal,
 	Settings2,
 	SquareTerminal
 } from 'lucide-react'
@@ -14,6 +16,7 @@ import type * as React from 'react'
 
 import { NavMain } from '@/components/nav-main'
 import { NavProjects } from '@/components/nav-projects'
+import { NavSecondary } from '@/components/nav-secondary'
 import { NavUser } from '@/components/nav-user'
 import { TeamSwitcher } from '@/components/team-switcher'
 import {
@@ -50,7 +53,7 @@ const data = {
 	],
 	navMain: [
 		{
-			title: 'Playground',
+			title: 'Main',
 			url: '#',
 			icon: SquareTerminal,
 			isActive: true,
@@ -70,23 +73,9 @@ const data = {
 			]
 		},
 		{
-			title: 'Models',
-			url: '#',
-			icon: Bot,
-			items: [
-				{
-					title: 'Genesis',
-					url: '#'
-				},
-				{
-					title: 'Explorer',
-					url: '#'
-				},
-				{
-					title: 'Quantum',
-					url: '#'
-				}
-			]
+			title: 'Organization',
+			url: '/organization',
+			icon: Bot
 		},
 		{
 			title: 'Documentation',
@@ -110,29 +99,46 @@ const data = {
 					url: '#'
 				}
 			]
+		}
+		// {
+		// 	title: 'Settings',
+		// 	url: '#',
+		// 	icon: Settings2,
+		// 	items: [
+		// 		{
+		// 			title: 'General',
+		// 			url: '#'
+		// 		},
+		// 		{
+		// 			title: 'Team',
+		// 			url: '#'
+		// 		},
+		// 		{
+		// 			title: 'Billing',
+		// 			url: '#'
+		// 		},
+		// 		{
+		// 			title: 'Limits',
+		// 			url: '#'
+		// 		}
+		// 	]
+		// }
+	],
+	navSecondary: [
+		{
+			title: 'Organization',
+			url: '/app/organization',
+			icon: ClubIcon
 		},
 		{
-			title: 'Settings',
+			title: 'Get Help',
 			url: '#',
-			icon: Settings2,
-			items: [
-				{
-					title: 'General',
-					url: '#'
-				},
-				{
-					title: 'Team',
-					url: '#'
-				},
-				{
-					title: 'Billing',
-					url: '#'
-				},
-				{
-					title: 'Limits',
-					url: '#'
-				}
-			]
+			icon: Map
+		},
+		{
+			title: 'Search',
+			url: '#',
+			icon: BookOpen
 		}
 	],
 	projects: [
@@ -162,6 +168,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			</SidebarHeader>
 			<SidebarContent>
 				<NavMain items={data.navMain} />
+
+				<NavSecondary items={data.navSecondary} />
+
 				<NavProjects projects={data.projects} />
 			</SidebarContent>
 			<SidebarFooter>

@@ -28,6 +28,7 @@ import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthedAppOrganizationRouteImport } from './routes/_authed/app/organization'
 
 const PublicRouteRoute = PublicRouteRouteImport.update({
   id: '/_public',
@@ -122,6 +123,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedAppOrganizationRoute = AuthedAppOrganizationRouteImport.update({
+  id: '/app/organization',
+  path: '/app/organization',
+  getParentRoute: () => AuthedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/demo/storybook': typeof DemoStorybookRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/app/organization': typeof AuthedAppOrganizationRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/demo/storybook': typeof DemoStorybookRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/app/organization': typeof AuthedAppOrganizationRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/_public/': typeof PublicIndexRoute
+  '/_authed/app/organization': typeof AuthedAppOrganizationRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/demo/storybook'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/app/organization'
     | '/api/auth/$'
     | '/api/rpc/$'
     | '/demo/form/address'
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/demo/storybook'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/app/organization'
     | '/api/auth/$'
     | '/api/rpc/$'
     | '/demo/form/address'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/demo/table'
     | '/demo/tanstack-query'
     | '/_public/'
+    | '/_authed/app/organization'
     | '/api/auth/$'
     | '/api/rpc/$'
     | '/demo/form/address'
@@ -398,14 +410,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/app/organization': {
+      id: '/_authed/app/organization'
+      path: '/app/organization'
+      fullPath: '/app/organization'
+      preLoaderRoute: typeof AuthedAppOrganizationRouteImport
+      parentRoute: typeof AuthedRouteRoute
+    }
   }
 }
 
 interface AuthedRouteRouteChildren {
+  AuthedAppOrganizationRoute: typeof AuthedAppOrganizationRoute
   AuthedAppIndexRoute: typeof AuthedAppIndexRoute
 }
 
 const AuthedRouteRouteChildren: AuthedRouteRouteChildren = {
+  AuthedAppOrganizationRoute: AuthedAppOrganizationRoute,
   AuthedAppIndexRoute: AuthedAppIndexRoute,
 }
 
