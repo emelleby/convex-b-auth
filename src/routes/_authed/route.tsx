@@ -3,10 +3,10 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/_authed")({
-	beforeLoad: ({ context }) => {
+	beforeLoad: ({ context, location }) => {
 		if (!context.isAuthenticated) {
 			console.log("redirecting to /sign-in");
-			throw redirect({ to: "/login" });
+			throw redirect({ to: "/login", search: { redirect: location.href } });
 		}
 	},
 	component: RouteComponent,

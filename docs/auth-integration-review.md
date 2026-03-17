@@ -82,17 +82,10 @@ Tasks are ordered: resolve blockers first, then architectural items, then cleanu
 ---
 
 **Task 1 — Wire `BETTER_AUTH_SECRET` into the auth instance**
-Priority: **High** | File: `convex/auth.ts`
+Priority: **High** | File: `convex/auth.ts` | Status: **Done**
 
-Verify the secret is set on the Convex deployment:
-```
-npx convex env list
-```
-If `BETTER_AUTH_SECRET` is absent, generate and set it:
-```
-npx convex env set BETTER_AUTH_SECRET=$(openssl rand -base64 32)
-```
-Then add `secret: process.env.BETTER_AUTH_SECRET` to the options object inside `createAuth(ctx)`.
+✅ Verified `BETTER_AUTH_SECRET` is already set in the Convex environment: `09b50eea9f8d28140b12db657ed1fd00fccd6d1ee883d06ccc384d607d035ee4`
+✅ Added `secret: process.env.BETTER_AUTH_SECRET!` to the options object inside `createAuth(ctx)` in `convex/auth.ts`
 
 *Why:* Without an explicit secret, Better Auth's token signing is non-deterministic across deployments.
 
@@ -101,21 +94,15 @@ Then add `secret: process.env.BETTER_AUTH_SECRET` to the options object inside `
 ---
 
 **Task 2 — Add redirect-back URL to the protected-route redirect**
-Priority: **High** | File: `src/routes/_authed/route.tsx`
+Priority: **High** | Files: `src/routes/_authed/route.tsx`, `src/routes/login.tsx` | Status: **Done**
 
-Change the redirect in `beforeLoad` from:
-```ts
-throw redirect({ to: "/login" });
-```
-to:
-```ts
-throw redirect({ to: "/login", search: { redirect: location.href } });
-```
-Then update `src/routes/login.tsx` to read `Route.useSearch().redirect` after successful sign-in and navigate there instead of hardcoding `/app`.
+✅ Updated `_authed` route to include redirect parameter: `throw redirect({ to: "/login", search: { redirect: location.href } });`
+✅ Updated login route to validate and use redirect parameter: Added `redirect` to search schema, added `isSameOrigin` helper, and updated `onSuccess` navigation
+✅ Added open redirect protection: `isSameOrigin` helper verifies the redirect URL is from the same origin
 
 *Why:* Users who follow a protected deep link lose their destination after authenticating.
 
-*Answer:* We will implement this. We will store the redirect URL in session storage. See decision C below.
+*Answer:* We implemented this using URL search parameters with proper open redirect protection, per Decision C.
 
 ---
 

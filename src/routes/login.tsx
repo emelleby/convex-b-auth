@@ -4,8 +4,22 @@ import { z } from "zod";
 import LoginSignupForm from "@/components/mvpblocks/login-signup";
 import { authClient } from "@/lib/auth-client";
 
+// Helper function to check if a URL is same-origin
+function isSameOrigin(url: string): boolean {
+	try {
+		const parsedUrl = new URL(url);
+		// For relative URLs, new URL() will use the current origin
+		return parsedUrl.origin === window.location.origin;
+	} catch {
+		// If URL is invalid, treat as different origin (will redirect to default)
+		console.warn("Invalid redirect URL:", url);
+		return false;
+	}
+}
+
 const loginSearchSchema = z.object({
 	mode: z.enum(["signup", "signin"]).optional(),
+	redirect: z.string().optional(),
 });
 
 export const Route = createFileRoute("/login")({
@@ -44,7 +58,11 @@ function LoginPage() {
 
 		const options = {
 			onSuccess: () => {
-				navigate({ to: "/app" });
+				const redirectTo =
+					search.redirect && isSameOrigin(search.redirect)
+						? search.redirect
+						: "/app";
+				navigate({ to: redirectTo });
 			},
 			onError: (ctx: { error: { message: string } }) => {
 				setError(ctx.error.message || "Authentication failed");
@@ -83,7 +101,11 @@ function LoginPage() {
 
 	// Don't render the form if already authenticated (will redirect via router)
 	if (isAuthenticated) {
-		navigate({ to: "/app" });
+		const redirectTo =
+			search.redirect && isSameOrigin(search.redirect)
+				? search.redirect
+				: "/app";
+		navigate({ to: redirectTo });
 		return null;
 	}
 

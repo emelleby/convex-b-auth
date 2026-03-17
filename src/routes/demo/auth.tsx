@@ -45,7 +45,20 @@ function AuthProtectedTodos() {
 									Welcome, {session.data?.user.email}
 								</p>
 							</div>
-							<Button variant="outline" onClick={() => authClient.signOut()}>
+							<Button
+								variant="outline"
+								onClick={async () => {
+									await authClient.signOut({
+										fetchOptions: {
+											onSuccess: async () => {
+												// for now, recommend reloading on sign out as Convex client
+												// expectAuth only works on initial load
+												location.reload();
+											},
+										},
+									});
+								}}
+							>
 								Sign Out
 							</Button>
 						</div>
