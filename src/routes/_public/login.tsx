@@ -22,7 +22,7 @@ const loginSearchSchema = z.object({
 	redirect: z.string().optional(),
 });
 
-export const Route = createFileRoute("/login")({
+export const Route = createFileRoute("/_public/login")({
 	ssr: false,
 	validateSearch: loginSearchSchema,
 	component: LoginPage,
@@ -61,14 +61,14 @@ function LoginPage() {
 				const redirectTo =
 					search.redirect && isSameOrigin(search.redirect)
 						? search.redirect
-						: "/app";
+						: "/app"
 				navigate({ to: redirectTo });
 			},
 			onError: (ctx: { error: { message: string } }) => {
 				setError(ctx.error.message || "Authentication failed");
 				setIsLoading(false);
 			},
-		};
+		}
 
 		if (isSignUp) {
 			await authClient.signUp.email(
@@ -78,7 +78,7 @@ function LoginPage() {
 					name: name || email.split("@")[0],
 				},
 				options,
-			);
+			)
 		} else {
 			await authClient.signIn.email(
 				{
@@ -86,9 +86,9 @@ function LoginPage() {
 					password,
 				},
 				options,
-			);
+			)
 		}
-	};
+	}
 
 	// Show loading state while checking authentication
 	if (isPending) {
@@ -96,7 +96,7 @@ function LoginPage() {
 			<div className="min-h-screen flex items-center justify-center">
 				<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
 			</div>
-		);
+		)
 	}
 
 	// Don't render the form if already authenticated (will redirect via router)
@@ -104,7 +104,7 @@ function LoginPage() {
 		const redirectTo =
 			search.redirect && isSameOrigin(search.redirect)
 				? search.redirect
-				: "/app";
+				: "/app"
 		navigate({ to: redirectTo });
 		return null;
 	}
@@ -123,5 +123,5 @@ function LoginPage() {
 			isLoading={isLoading}
 			error={error}
 		/>
-	);
+	)
 }

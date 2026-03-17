@@ -9,43 +9,38 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AboutRouteImport } from './routes/about'
+import { Route as PublicRouteRouteImport } from './routes/_public/route'
 import { Route as AuthedRouteRouteImport } from './routes/_authed/route'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as DemoTableRouteImport } from './routes/demo/table'
 import { Route as DemoStorybookRouteImport } from './routes/demo/storybook'
 import { Route as DemoStoreRouteImport } from './routes/demo/store'
 import { Route as DemoOrpcTodoRouteImport } from './routes/demo/orpc-todo'
-import { Route as DemoI18nRouteImport } from './routes/demo.i18n'
+import { Route as DemoI18nRouteImport } from './routes/demo/i18n'
 import { Route as DemoConvexRouteImport } from './routes/demo/convex'
 import { Route as DemoAuthRouteImport } from './routes/demo/auth'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as PublicLoginRouteImport } from './routes/_public/login'
+import { Route as PublicAboutRouteImport } from './routes/_public/about'
 import { Route as AuthedAppIndexRouteImport } from './routes/_authed/app/index'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+const PublicRouteRoute = PublicRouteRouteImport.update({
+  id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedRouteRoute = AuthedRouteRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
+const PublicIndexRoute = PublicIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => PublicRouteRoute,
 } as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
@@ -92,6 +87,16 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PublicLoginRoute = PublicLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => PublicRouteRoute,
+} as any)
+const PublicAboutRoute = PublicAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => PublicRouteRoute,
+} as any)
 const AuthedAppIndexRoute = AuthedAppIndexRouteImport.update({
   id: '/app/',
   path: '/app/',
@@ -119,9 +124,9 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/login': typeof LoginRoute
+  '/': typeof PublicIndexRoute
+  '/about': typeof PublicAboutRoute
+  '/login': typeof PublicLoginRoute
   '/api/$': typeof ApiSplatRoute
   '/demo/auth': typeof DemoAuthRoute
   '/demo/convex': typeof DemoConvexRoute
@@ -138,9 +143,9 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AuthedAppIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/login': typeof LoginRoute
+  '/': typeof PublicIndexRoute
+  '/about': typeof PublicAboutRoute
+  '/login': typeof PublicLoginRoute
   '/api/$': typeof ApiSplatRoute
   '/demo/auth': typeof DemoAuthRoute
   '/demo/convex': typeof DemoConvexRoute
@@ -158,10 +163,10 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteRouteWithChildren
-  '/about': typeof AboutRoute
-  '/login': typeof LoginRoute
+  '/_public': typeof PublicRouteRouteWithChildren
+  '/_public/about': typeof PublicAboutRoute
+  '/_public/login': typeof PublicLoginRoute
   '/api/$': typeof ApiSplatRoute
   '/demo/auth': typeof DemoAuthRoute
   '/demo/convex': typeof DemoConvexRoute
@@ -171,6 +176,7 @@ export interface FileRoutesById {
   '/demo/storybook': typeof DemoStorybookRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/_public/': typeof PublicIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
   '/demo/form/address': typeof DemoFormAddressRoute
@@ -218,10 +224,10 @@ export interface FileRouteTypes {
     | '/app'
   id:
     | '__root__'
-    | '/'
     | '/_authed'
-    | '/about'
-    | '/login'
+    | '/_public'
+    | '/_public/about'
+    | '/_public/login'
     | '/api/$'
     | '/demo/auth'
     | '/demo/convex'
@@ -231,6 +237,7 @@ export interface FileRouteTypes {
     | '/demo/storybook'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/_public/'
     | '/api/auth/$'
     | '/api/rpc/$'
     | '/demo/form/address'
@@ -239,10 +246,8 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AuthedRouteRoute: typeof AuthedRouteRouteWithChildren
-  AboutRoute: typeof AboutRoute
-  LoginRoute: typeof LoginRoute
+  PublicRouteRoute: typeof PublicRouteRouteWithChildren
   ApiSplatRoute: typeof ApiSplatRoute
   DemoAuthRoute: typeof DemoAuthRoute
   DemoConvexRoute: typeof DemoConvexRoute
@@ -260,18 +265,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
+    '/_public': {
+      id: '/_public'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PublicRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed': {
@@ -281,12 +279,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
+    '/_public/': {
+      id: '/_public/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof PublicIndexRouteImport
+      parentRoute: typeof PublicRouteRoute
     }
     '/demo/tanstack-query': {
       id: '/demo/tanstack-query'
@@ -351,6 +349,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_public/login': {
+      id: '/_public/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof PublicLoginRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
+    '/_public/about': {
+      id: '/_public/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof PublicAboutRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
     '/_authed/app/': {
       id: '/_authed/app/'
       path: '/app'
@@ -401,11 +413,25 @@ const AuthedRouteRouteWithChildren = AuthedRouteRoute._addFileChildren(
   AuthedRouteRouteChildren,
 )
 
+interface PublicRouteRouteChildren {
+  PublicAboutRoute: typeof PublicAboutRoute
+  PublicLoginRoute: typeof PublicLoginRoute
+  PublicIndexRoute: typeof PublicIndexRoute
+}
+
+const PublicRouteRouteChildren: PublicRouteRouteChildren = {
+  PublicAboutRoute: PublicAboutRoute,
+  PublicLoginRoute: PublicLoginRoute,
+  PublicIndexRoute: PublicIndexRoute,
+}
+
+const PublicRouteRouteWithChildren = PublicRouteRoute._addFileChildren(
+  PublicRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AuthedRouteRoute: AuthedRouteRouteWithChildren,
-  AboutRoute: AboutRoute,
-  LoginRoute: LoginRoute,
+  PublicRouteRoute: PublicRouteRouteWithChildren,
   ApiSplatRoute: ApiSplatRoute,
   DemoAuthRoute: DemoAuthRoute,
   DemoConvexRoute: DemoConvexRoute,

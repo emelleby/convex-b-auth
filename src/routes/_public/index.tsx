@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { m } from "#/paraglide/messages";
 
-export const Route = createFileRoute("/")({ component: App });
+export const Route = createFileRoute("/_public/")({ component: App });
 
 function App() {
 	return (
@@ -87,5 +87,5 @@ function App() {
 				</ul>
 			</section>
 		</main>
-	);
+	)
 }

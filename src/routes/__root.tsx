@@ -11,10 +11,10 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
+import { Toaster } from "sonner";
 import { getLocale, shouldRedirect } from "#/paraglide/runtime";
 import { getToken } from "@/lib/auth-server";
-import Footer from "../components/Footer";
-import Header from "../components/Header";
+
 import ConvexProvider from "../integrations/convex/provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import TanStackQueryProvider from "../integrations/tanstack-query/root-provider";
@@ -92,9 +92,8 @@ function RootComponent() {
 	return (
 		<TanStackQueryProvider>
 			<ConvexProvider initialToken={context.token}>
-				<Header />
 				<Outlet />
-				<Footer />
+				<Toaster />
 				<TanStackDevtools
 					config={{
 						position: "bottom-right",
