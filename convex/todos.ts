@@ -1,17 +1,6 @@
 import { mutation, query } from './_generated/server'
 import { v } from 'convex/values'
-import { authComponent } from './auth'
-import type { GenericCtx } from '@convex-dev/better-auth'
-import type { DataModel } from './_generated/dataModel'
-
-// Helper to require authentication
-async function requireAuth(ctx: GenericCtx<DataModel>) {
-  const user = await authComponent.getAuthUser(ctx)
-  if (!user) {
-    throw new Error('Authentication required')
-  }
-  return user
-}
+import { requireAuth } from './auth-helpers'
 
 export const list = query({
   args: {},

@@ -107,55 +107,46 @@ Priority: **High** | Files: `src/routes/_authed/route.tsx`, `src/routes/login.ts
 ---
 
 **Task 3 — Fix sign-out in the demo route**
-Priority: **Medium** | File: `src/routes/demo/auth.tsx`
+Priority: **Medium** | File: `src/routes/demo/auth.tsx` | Status: **Done**
 
-Find the `signOut()` call and add a `location.reload()` in its `onSuccess` callback, matching the pattern in `src/components/AuthButton.tsx`.
+✅ Updated the signOut() call to include an onSuccess callback that reloads the page, matching the pattern in `src/components/AuthButton.tsx`.
 
 *Why:* The Convex client's `expectAuth: true` setting means auth state only resets correctly after a full SSR cycle triggered by a reload.
 
 ---
 
 **Task 4 — Extract `createAuthOptions` and add the `options` export**
-Priority: **Medium** | File: `convex/auth.ts`
+Priority: **Medium** | File: `convex/auth.ts` | Status: **Done**
 
-Refactor `createAuth(ctx)` to delegate to a separate `createAuthOptions(ctx)` function, then add:
-```ts
-export const options = createAuthOptions({} as GenericCtx<DataModel>);
-```
-Pass this function (not the instance) to any CLI commands via `--config`.
+✅ Refactored `createAuth(ctx)` to delegate to a separate `createAuthOptions(ctx)` function
+✅ Added `export const options = createAuthOptions({} as GenericCtx<DataModel>)`
 
 *Why:* Without `options`, the `npx auth generate` CLI cannot introspect the configuration to regenerate the Convex schema when plugins are added.
 
 ---
 
 **Task 5 — Add `verbose: false` to `createClient`**
-Priority: **Low** | File: `convex/auth.ts`
+Priority: **Low** | File: `convex/auth.ts` | Status: **Done**
 
-Change:
-```ts
-export const authComponent = createClient<DataModel>(components.betterAuth)
-```
-to:
-```ts
-export const authComponent = createClient<DataModel>(components.betterAuth, { verbose: false })
-```
+✅ Changed `createClient` to include `{ verbose: false }`
+
 *Why:* Suppresses debug output that would otherwise appear in production Convex logs.
 
 ---
 
 **Task 6 — Remove the `console.log` from `_authed/route.tsx`**
-Priority: **Low** | File: `src/routes/_authed/route.tsx`
+Priority: **Low** | File: `src/routes/_authed/route.tsx` | Status: **Done**
 
-Remove the `console.log("redirecting to /sign-in")` line from `beforeLoad`.
+✅ Removed the `console.log("redirecting to /sign-in")` line from `beforeLoad`
 
 *Why:* It is a development artifact that will appear in production server logs on every unauthenticated route access.
 
 ---
 
 **Task 7 — Add `appName` to the auth options**
-Priority: **Low** | File: `convex/auth.ts`
+Priority: **Low** | File: `convex/auth.ts` | Status: **Done**
 
-Add `appName: "Sailing Club App"` to the options object inside `createAuth(ctx)`.
+✅ Added `appName: "Sailing Club App"` to the auth options
 
 *Why:* Populates auth-generated emails and the Better Auth dashboard with the correct product name instead of a generic default.
 
@@ -164,9 +155,9 @@ Add `appName: "Sailing Club App"` to the options object inside `createAuth(ctx)`
 ---
 
 **Task 8 — Make a deliberate decision on `requireEmailVerification`**
-Priority: **Low** | File: `convex/auth.ts`
+Priority: **Low** | File: `convex/auth.ts` | Status: **Done**
 
-Either remove the `requireEmailVerification: false` flag (to enable verification) and implement an email provider, or add a code comment explicitly recording the decision to leave verification disabled and under what conditions it should be revisited.
+✅ Updated code comment to explicitly document the decision: disabled for development (simpler testing/onboarding), must be enabled for production with email provider integration
 
 *Why:* The current value is a placeholder that will be forgotten. It should be an explicit, documented choice.
 
@@ -175,9 +166,10 @@ Either remove the `requireEmailVerification: false` flag (to enable verification
 ---
 
 **Task 9 — Extract `requireAuth` to a shared module**
-Priority: **Low** | File: `convex/todos.ts` → new location `convex/auth-helpers.ts` (or similar)
+Priority: **Low** | File: `convex/todos.ts` → new location `convex/auth-helpers.ts` | Status: **Done**
 
-Move the `requireAuth(ctx)` function out of `todos.ts` and into a shared module. Update `todos.ts` to import it from the new location.
+✅ Created `convex/auth-helpers.ts` containing the `requireAuth` function
+✅ Updated `convex/todos.ts` to import `requireAuth` from `auth-helpers.ts` instead of defining it locally
 
 *Why:* The pattern is correct, but its definition in a domain file means every new protected Convex file must either duplicate it or import from an unrelated module.
 
