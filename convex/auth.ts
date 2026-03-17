@@ -36,16 +36,17 @@ const createAuthOptions = (ctx: GenericCtx<DataModel>) => ({
     organization({
       teams: {
         enabled: true,
+        maximumTeams: 10, // Limit teams per organization
       },
-      // Better Auth roles are defined as a simple list if not using permissions plugin
-      // roles: ['owner', 'admin', 'member', 'team-member'],      schema: {
-      teamMember: {
-        additionalFields: {
-          role: {
-            type: 'string',
-            required: false,
-          },
-        },
+      // Member limit based on organization plan
+      // Free: 5 members, Pro: unlimited
+      membershipLimit: 100, // Default limit, can be made dynamic later
+
+      // No email sending - invitations handled via in-app notifications
+      sendInvitationEmail: async (data) => {
+        // Intentionally empty - no email infrastructure
+        // Invitations are stored in DB and shown in notification center
+        console.log(`[DEV] Invitation created: ${data.email} invited to ${data.organization.name}`);
       },
     }),
   ],

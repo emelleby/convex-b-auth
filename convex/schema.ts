@@ -37,6 +37,7 @@ export default defineSchema({
     inviterId: v.string(),
     organizationId: v.string(),
     role: v.optional(v.string()),
+    teamId: v.optional(v.string()),
     status: v.string(),
     createdAt: v.number(),
     expiresAt: v.number(),
@@ -59,4 +60,17 @@ export default defineSchema({
   })
     .index('by_teamId', ['teamId'])
     .index('by_userId', ['userId']),
+  joinRequest: defineTable({
+    id: v.string(),
+    userId: v.string(),
+    organizationId: v.string(),
+    message: v.optional(v.string()),
+    status: v.string(), // 'pending' | 'approved' | 'rejected'
+    reviewedBy: v.optional(v.string()),
+    reviewedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index('by_organizationId', ['organizationId'])
+    .index('by_userId', ['userId'])
+    .index('by_status_and_organizationId', ['status', 'organizationId']),
 })
