@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth/minimal'
 import { createClient } from '@convex-dev/better-auth'
 import { convex } from '@convex-dev/better-auth/plugins'
+import { organization } from 'better-auth/plugins'
 import authConfig from './auth.config'
 import { components } from './_generated/api'
 import { query } from './_generated/server'
@@ -32,6 +33,13 @@ const createAuthOptions = (ctx: GenericCtx<DataModel>) => ({
   plugins: [
     // The Convex plugin is required for Convex compatibility
     convex({ authConfig }),
+    organization({
+      teams: {
+        enabled: true,
+      },
+      // Better Auth roles are defined as a simple list if not using permissions plugin
+      // roles: ['owner', 'admin', 'member', 'team-member'],
+    }),
   ],
 })
 

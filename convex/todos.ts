@@ -1,6 +1,6 @@
 import { mutation, query } from './_generated/server'
 import { v } from 'convex/values'
-import { requireAuth } from './auth-helpers'
+import { requireAuth } from './auth_helpers'
 
 export const list = query({
   args: {},
