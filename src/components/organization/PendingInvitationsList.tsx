@@ -1,7 +1,6 @@
 'use client'
 
-import { api } from '¤/_generated/api'
-import { useMutation, useQuery } from 'convex/react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Mail, X } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -14,40 +13,60 @@ import {
 	DialogTitle
 } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow
+} from '@/components/ui/table'
 import { authClient } from '@/lib/auth-client'
+
+type Invitation = {
+	id: string
+	email: string
+	role: string
+	organizationId: string
+	status: string
+	createdAt: Date | string | number
+	expiresAt: Date | string | number
+}
 
 export default function PendingInvitationsList() {
 	const { data: activeOrg } = authClient.useActiveOrganization()
+	const queryClient = useQueryClient()
 	const [cancelingId, setCancelingId] = useState<string | null>(null)
-	const [error, setError] = useState<string | null>(null)
-	const [isCanceling, setIsCanceling] = useState(false)
 
-	// Query: Fetch pending invitations using Convex
-	const invitations =
-		useQuery(
-			api.invitations.listPendingInvitations,
-			activeOrg?.id ? { organizationId: activeOrg.id } : 'skip'
-		) ?? []
-
-	const isLoading = invitations === undefined
-
-	// Mutation: Cancel invitation using Convex
-	const cancelInvitation = useMutation(api.invitations.cancelInvitation)
-
-	const handleCancelInvitation = async (invitationId: string) => {
-		try {
-			setError(null)
-			setIsCanceling(true)
-			await cancelInvitation({ invitationId })
-			setCancelingId(null)
-		} catch (err) {
-			setError(
-				err instanceof Error ? err.message : 'Failed to cancel invitation'
+	// Query: Fetch invitations using TanStack Query + Better-Auth API
+	const {
+		data: invitations,
+		isLoading,
+		error
+	} = useQuery({
+		queryKey: ['organization-invitations', activeOrg?.id],
+		queryFn: () =>
+			authClient.organization.listInvitations({
+				query: { organizationId: activeOrg?.id }
+			}),
+		enabled: !!activeOrg?.id,
+		select: (response) =>
+			((response.data as unknown as Invitation[]) ?? []).filter(
+				(inv) => inv.status === 'pending'
 			)
-		} finally {
-			setIsCanceling(false)
+	})
+
+	// Mutation: Cancel invitation using Better-Auth API
+	const cancelMutation = useMutation({
+		mutationFn: (invitationId: string) =>
+			authClient.organization.cancelInvitation({ invitationId }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: ['organization-invitations', activeOrg?.id]
+			})
+			setCancelingId(null)
 		}
-	}
+	})
 
 	if (isLoading) {
 		return (
@@ -58,7 +77,7 @@ export default function PendingInvitationsList() {
 		)
 	}
 
-	if (invitations.length === 0) {
+	if (!invitations || invitations.length === 0) {
 		return (
 			<div className="text-center py-8">
 				<Mail className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -70,48 +89,56 @@ export default function PendingInvitationsList() {
 		)
 	}
 
+	const errorMessage =
+		(cancelMutation.error as Error | null)?.message ??
+		(error as Error | null)?.message
+
 	return (
 		<div className="space-y-4">
-			{error && (
+			{errorMessage && (
 				<div className="bg-destructive/10 text-destructive px-4 py-2 rounded-md text-sm">
-					{error}
+					{errorMessage}
 				</div>
 			)}
 
-			<div className="rounded-lg border">
-				<div className="grid grid-cols-4 gap-4 p-4 font-semibold text-sm border-b bg-muted/50">
-					<div>Email</div>
-					<div>Role</div>
-					<div>Sent</div>
-					<div className="text-right">Actions</div>
-				</div>
-
-				{invitations.map((invitation) => (
-					<div
-						key={invitation._id}
-						className="grid grid-cols-4 gap-4 p-4 border-b last:border-b-0 items-center"
-					>
-						<div className="text-sm font-medium">{invitation.email}</div>
-						<div className="text-sm">
-							<span className="inline-block px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium capitalize">
-								{invitation.role}
-							</span>
-						</div>
-						<div className="text-sm text-muted-foreground">
-							{new Date(invitation.createdAt).toLocaleDateString()}
-						</div>
-						<div className="flex justify-end">
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => setCancelingId(invitation._id)}
-							>
-								<X className="h-4 w-4 mr-1" />
-								Cancel
-							</Button>
-						</div>
-					</div>
-				))}
+			<div className="rounded-md border">
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead>Email</TableHead>
+							<TableHead>Role</TableHead>
+							<TableHead>Sent</TableHead>
+							<TableHead className="text-right">Actions</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{invitations.map((invitation) => (
+							<TableRow key={invitation.id}>
+								<TableCell className="font-medium">
+									{invitation.email}
+								</TableCell>
+								<TableCell>
+									<span className="inline-block px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium capitalize">
+										{invitation.role}
+									</span>
+								</TableCell>
+								<TableCell className="text-muted-foreground">
+									{new Date(invitation.createdAt).toLocaleDateString()}
+								</TableCell>
+								<TableCell className="text-right">
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => setCancelingId(invitation.id)}
+									>
+										<X className="h-4 w-4 mr-1" />
+										Cancel
+									</Button>
+								</TableCell>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
 			</div>
 
 			{/* Cancel Confirmation Dialog */}
@@ -130,10 +157,10 @@ export default function PendingInvitationsList() {
 						</Button>
 						<Button
 							variant="destructive"
-							disabled={isCanceling}
-							onClick={() => cancelingId && handleCancelInvitation(cancelingId)}
+							disabled={cancelMutation.isPending}
+							onClick={() => cancelingId && cancelMutation.mutate(cancelingId)}
 						>
-							{isCanceling ? 'Canceling...' : 'Cancel Invitation'}
+							{cancelMutation.isPending ? 'Canceling...' : 'Cancel Invitation'}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

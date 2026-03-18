@@ -11,7 +11,6 @@
 import type * as auth from "../auth.js";
 import type * as auth_helpers from "../auth_helpers.js";
 import type * as http from "../http.js";
-import type * as invitations from "../invitations.js";
 import type * as joinRequests from "../joinRequests.js";
 import type * as people from "../people.js";
 import type * as todos from "../todos.js";
@@ -26,7 +25,6 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   auth_helpers: typeof auth_helpers;
   http: typeof http;
-  invitations: typeof invitations;
   joinRequests: typeof joinRequests;
   people: typeof people;
   todos: typeof todos;

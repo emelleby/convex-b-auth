@@ -1,11 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { m } from "#/paraglide/messages";
-import logo from "/logo192.png?url";
-import LocaleSwitcher from "../components/LocaleSwitcher";
+import { createFileRoute } from '@tanstack/react-router'
+import { m } from '#/paraglide/messages'
+import LocaleSwitcher from '@/components/LocaleSwitcher'
+import logo from '/logo192.png?url'
 
-export const Route = createFileRoute("/demo/i18n")({
-	component: App,
-});
+export const Route = createFileRoute('/demo/i18n')({
+	component: App
+})
 
 function App() {
 	return (
@@ -16,7 +16,7 @@ function App() {
 					className="h-[40vmin] pointer-events-none animate-[spin_20s_linear_infinite]"
 					alt="logo"
 				/>
-				<p>{m.example_message({ username: "TanStack Router" })}</p>
+				<p>{m.example_message({ username: 'TanStack Router' })}</p>
 				<a
 					className="text-[#61dafb] hover:underline"
 					href="https://inlang.com/m/gerre34r/library-inlang-paraglideJs"
