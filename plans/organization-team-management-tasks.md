@@ -18,8 +18,8 @@
 - ✅ Task 1.6: Create Join Request Convex Functions - Part 2 (Approve/Reject/Cancel) - **COMPLETE**
 
 ### Phase 2: Create Organization Flow (~6-8 hours) ← **MOVED EARLIER FOR TESTING**
-- ⏳ Task 2.1: Create Organization Dialog - **PENDING**
-- ⏳ Task 2.2: Integrate Create Organization in Switcher - **PENDING**
+- ✅ Task 2.1: Create Organization Dialog - **COMPLETE**
+- ✅ Task 2.2: Integrate Create Organization in Switcher - **COMPLETE**
 
 ### Phase 3: Organization Management UI (~18-24 hours)
 - ⏳ Task 3.1: Create Organization Page Layout with Tabs - **PENDING**
@@ -768,11 +768,20 @@ export const cancelJoinRequest = mutation({
 
 > **Why Phase 2?** Creating organizations must come before managing them. This phase enables testing of all subsequent phases by allowing users to create organizations.
 
-### Task 2.1: Create Organization Dialog
+### Task 2.1: Create Organization Dialog ✅ COMPLETE
 
 **Complexity**: Medium (3-4 hours)
 
 **Dependencies**: Phase 1 complete
+
+**Implemented**: `src/components/organization/CreateOrganizationDialog.tsx`
+- Supports both **controlled** mode (`open` + `onOpenChange` props) and **uncontrolled** mode (`trigger` prop)
+- Name field with auto-generated slug (stops auto-generating once user manually edits the slug)
+- Slug validated with `/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/`
+- Optional logo URL field
+- Creates org via `authClient.organization.create()`, then sets it active via `authClient.organization.setActive()`
+- Full error display and loading/disabled states during submission
+- Form resets on close
 
 **Context**:
 Users need to be able to create new organizations. This dialog captures the organization details and uses the Better-Auth API to create the organization.
@@ -994,11 +1003,21 @@ export default function CreateOrganizationDialog({
 
 ---
 
-### Task 2.2: Integrate Create Organization in Switcher
+### Task 2.2: Integrate Create Organization in Switcher ✅ COMPLETE
 
 **Complexity**: Medium (2-3 hours)
 
 **Dependencies**: Task 2.1 complete
+
+**Implemented**: `src/components/team-switcher.tsx` + `src/components/app-sidebar.tsx`
+- `TeamSwitcher` now takes **no props** — it fetches its own data via Better-Auth hooks
+- Uses `authClient.useListOrganizations()` for the org list and `authClient.useActiveOrganization()` for the current org
+- **Loading state**: animated skeleton placeholder while hooks are pending
+- **Empty state**: renders a `CreateOrganizationDialog` (trigger mode) that directly opens on click
+- **Populated state**: dropdown menu listing all orgs, active one highlighted with "Active" label + bold name
+- Switching org calls `authClient.organization.setActive()`
+- "Add organization" menu item opens `CreateOrganizationDialog` in controlled mode
+- `app-sidebar.tsx` updated: mock `teams` array removed, `<TeamSwitcher />` now called with no props
 
 **Context**:
 The organization switcher already has an "Add team" button. This needs to be wired up to open the CreateOrganizationDialog.
