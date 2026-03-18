@@ -175,7 +175,8 @@ export const tables = {
     updatedAt: v.optional(v.union(v.null(), v.number())),
   })
     .index("organizationId", ["organizationId"])
-    .index("email", ["email"]),
+    .index("email", ["email"])
+    .index("organizationId_status", ["organizationId", "status"]),
 
   team: defineTable({
     name: v.string(),

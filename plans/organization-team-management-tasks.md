@@ -22,10 +22,10 @@
 - ✅ Task 2.2: Integrate Create Organization in Switcher - **COMPLETE**
 
 ### Phase 3: Organization Management UI (~18-24 hours)
-- ⏳ Task 3.1: Create Organization Page Layout with Tabs - **PENDING**
-- ⏳ Task 3.2: Create Members List Component - **PENDING**
-- ⏳ Task 3.3: Create Invite Member Dialog - **PENDING**
-- ⏳ Task 3.4: Create Pending Invitations List Component - **PENDING**
+- ✅ Task 3.1: Create Organization Page Layout with Tabs - **COMPLETE**
+- ✅ Task 3.2: Create Members List Component - **COMPLETE**
+- ✅ Task 3.3: Create Invite Member Dialog - **COMPLETE**
+- ✅ Task 3.4: Create Pending Invitations List Component - **COMPLETE**
 - ⏳ Task 3.5: Create Organization Settings Component - **PENDING**
 
 ### Phase 4: Team Management UI (~14-18 hours)
@@ -1708,7 +1708,7 @@ export default function MembersList() {
 
 ---
 
-### Task 3.3: Create Invite Member Dialog
+### Task 3.3: Create Invite Member Dialog ✅ COMPLETE
 
 **Complexity**: Medium (2-3 hours)
 
@@ -1717,12 +1717,23 @@ export default function MembersList() {
 **Context**:
 Allow organization admins to invite new members by email. Since we're not using email infrastructure, invitations are stored in the database and shown via in-app notifications (to be implemented in Phase 4).
 
+**Implemented**: `src/components/organization/InviteMemberDialog.tsx`
+- Dialog with email input field and role selection dropdown
+- Email validation using regex pattern
+- Role selection: Member or Admin (defaults to Member)
+- Loading state while sending invitation
+- Success message on successful invite
+- Error message display on failure
+- Form resets when dialog closes
+- Calls `authClient.organization.inviteMember()` API
+- Integrated into MembersList with cache invalidation
+
 **Requirements**:
-- **File to create**: `src/components/organization/InviteMemberDialog.tsx`
-- Dialog with email input and role selection
-- Validate email format
-- Call Better-Auth invite API
-- Show success/error feedback
+- **File to create**: `src/components/organization/InviteMemberDialog.tsx` ✅
+- Dialog with email input and role selection ✅
+- Validate email format ✅
+- Call Better-Auth invite API ✅
+- Show success/error feedback ✅
 
 **Reference**: Better-Auth docs: `authClient.organization.inviteMember()`
 
@@ -1889,14 +1900,14 @@ export default function InviteMemberDialog({ onInviteSent }: InviteMemberDialogP
 3. Update MembersList to include the invite button, or add to CardHeader in organization page
 
 **Acceptance Criteria**:
-- [ ] `src/components/organization/InviteMemberDialog.tsx` exists
-- [ ] Dialog opens with email and role inputs
-- [ ] Email validation before submitting
-- [ ] Role selection between member and admin
-- [ ] Loading state while sending invitation
-- [ ] Success message shown on successful invite
-- [ ] Error message shown on failure
-- [ ] Dialog resets state when closed/reopened
+- [x] `src/components/organization/InviteMemberDialog.tsx` exists
+- [x] Dialog opens with email and role inputs
+- [x] Email validation before submitting
+- [x] Role selection between member and admin
+- [x] Loading state while sending invitation
+- [x] Success message shown on successful invite
+- [x] Error message shown on failure
+- [x] Dialog resets state when closed/reopened
 
 **Testing Instructions**:
 1. Click "Invite Member" button
@@ -1905,24 +1916,35 @@ export default function InviteMemberDialog({ onInviteSent }: InviteMemberDialogP
 4. Verify invitation appears in Convex dashboard `invitation` table
 5. Test inviting same email twice → should show error
 
-**Definition of Done**: Invite dialog works, creates invitation in database, shows appropriate feedback.
+**Definition of Done**: Invite dialog works, creates invitation in database, shows appropriate feedback. ✅ COMPLETE
 
 ---
 
-### Task 3.4: Create Pending Invitations List Component
+### Task 3.4: Create Pending Invitations List Component ✅ COMPLETE
 
 **Complexity**: Medium (2-3 hours)
 
-**Dependencies**: Task 2.3 complete
+**Dependencies**: Task 3.3 complete
 
 **Context**:
 The Invitations tab needs to show pending invitations that have been sent but not yet accepted, allowing admins to cancel them if needed.
 
+**Implemented**: `src/components/organization/PendingInvitationsList.tsx`
+- Fetches pending invitations via `authClient.organization.listInvitations()` using TanStack Query
+- Filters to show only pending status invitations
+- Displays email, role, and sent date in a table format
+- Cancel button with confirmation dialog for each invitation
+- Calls `authClient.organization.cancelInvitation()` to revoke invitations
+- Automatically refreshes list after cancellation
+- Loading skeleton while fetching
+- Empty state with helpful message when no pending invitations
+- Integrated into organization page Invitations tab
+
 **Requirements**:
-- **File to create**: `src/components/organization/PendingInvitationsList.tsx`
-- Display pending invitations with invitee email, role, date
-- Allow admins to cancel/revoke invitations
-- Show empty state when no pending invitations
+- **File to create**: `src/components/organization/PendingInvitationsList.tsx` ✅
+- Display pending invitations with invitee email, role, date ✅
+- Allow admins to cancel/revoke invitations ✅
+- Show empty state when no pending invitations ✅
 
 **Reference**: Better-Auth docs: `authClient.organization.listInvitations()`, `authClient.organization.cancelInvitation()`
 
@@ -2093,12 +2115,12 @@ export default function PendingInvitationsList() {
 2. Update the organization page Invitations tab to include this component and the InviteMemberDialog
 
 **Acceptance Criteria**:
-- [ ] `src/components/organization/PendingInvitationsList.tsx` exists
-- [ ] Pending invitations are displayed with email, role, sent date
-- [ ] Empty state shown when no pending invitations
-- [ ] Cancel button with confirmation dialog
-- [ ] List refreshes after canceling invitation
-- [ ] Loading skeleton while fetching
+- [x] `src/components/organization/PendingInvitationsList.tsx` exists
+- [x] Pending invitations are displayed with email, role, sent date
+- [x] Empty state shown when no pending invitations
+- [x] Cancel button with confirmation dialog
+- [x] List refreshes after canceling invitation
+- [x] Loading skeleton while fetching
 
 **Testing Instructions**:
 1. Create some invitations using InviteMemberDialog
@@ -2107,7 +2129,7 @@ export default function PendingInvitationsList() {
 4. Cancel an invitation, verify it's removed from list
 5. Test with no invitations - should show empty state
 
-**Definition of Done**: Invitations list displays pending invitations, cancel works with confirmation.
+**Definition of Done**: Invitations list displays pending invitations, cancel works with confirmation. ✅ COMPLETE
 
 ---
 
