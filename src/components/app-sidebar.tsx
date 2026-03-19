@@ -8,12 +8,12 @@ import {
 	SquareTerminal
 } from 'lucide-react'
 import type * as React from 'react'
-
+import { TeamSwitcher } from '#/components/org-switcher'
 import { NavMain } from '@/components/nav-main'
 import { NavProjects } from '@/components/nav-projects'
 import { NavSecondary } from '@/components/nav-secondary'
 import { NavUser } from '@/components/nav-user'
-import { TeamSwitcher } from '@/components/team-switcher'
+import { TeamSwitcherInOrg } from '@/components/TeamSwitcherInOrg'
 import {
 	Sidebar,
 	SidebarContent,
@@ -143,6 +143,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		<Sidebar collapsible="icon" {...props}>
 			<SidebarHeader>
 				<TeamSwitcher />
+				<TeamSwitcherInOrg />
 			</SidebarHeader>
 			<SidebarContent>
 				<NavMain items={data.navMain} />

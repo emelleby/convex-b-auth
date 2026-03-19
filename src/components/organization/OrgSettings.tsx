@@ -1,12 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { AlertTriangle, Save } from 'lucide-react'
-import { authClient } from '@/lib/auth-client'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
 	Card,
 	CardContent,
@@ -22,6 +19,9 @@ import {
 	DialogHeader,
 	DialogTitle
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { authClient } from '@/lib/auth-client'
 
 export default function OrgSettings() {
 	const navigate = useNavigate()
@@ -176,7 +176,10 @@ export default function OrgSettings() {
 									Permanently delete this organization and all its data
 								</p>
 							</div>
-							<Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+							<Button
+								variant="destructive"
+								onClick={() => setShowDeleteDialog(true)}
+							>
 								Delete Organization
 							</Button>
 						</div>
@@ -194,8 +197,8 @@ export default function OrgSettings() {
 						</DialogTitle>
 						<DialogDescription>
 							This action cannot be undone. This will permanently delete the
-							organization <strong>{activeOrg.name}</strong>, remove all members,
-							and delete all associated data.
+							organization <strong>{activeOrg.name}</strong>, remove all
+							members, and delete all associated data.
 						</DialogDescription>
 					</DialogHeader>
 

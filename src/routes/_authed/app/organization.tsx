@@ -3,6 +3,7 @@ import { Building2, Mail, Settings, UserCog, Users } from 'lucide-react'
 import MembersList from '@/components/organization/MembersList'
 import OrgSettings from '@/components/organization/OrgSettings'
 import PendingInvitationsList from '@/components/organization/PendingInvitationsList'
+import TeamsList from '@/components/organization/TeamsList'
 import {
 	Card,
 	CardContent,
@@ -111,8 +112,7 @@ function OrganizationPage() {
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							{/* TODO: TeamsList component */}
-							<p>Teams list will go here</p>
+							<TeamsList />
 						</CardContent>
 					</Card>
 				</TabsContent>

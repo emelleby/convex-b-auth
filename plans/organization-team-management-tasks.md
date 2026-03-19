@@ -29,10 +29,10 @@
 - ✅ Task 3.5: Create Organization Settings Component - **COMPLETE**
 
 ### Phase 4: Team Management UI (~14-18 hours)
-- ⏳ Task 4.1: Create Teams List Component - **PENDING**
-- ⏳ Task 4.2: Create Team Dialog Component - **PENDING**
-- ⏳ Task 4.3: Create Team Switcher Component - **PENDING**
-- ⏳ Task 4.4: Update App Sidebar with Team Switcher - **PENDING**
+- ✅ Task 4.1: Create Teams List Component - **COMPLETE**
+- ✅ Task 4.2: Create Team Dialog Component - **COMPLETE** (Fixed: API call now uses `data: { name }` wrapper and form default values populate with team name for editing)
+- ✅ Task 4.3: Create Team Switcher Component - **COMPLETE**
+- ✅ Task 4.4: Update App Sidebar with Team Switcher - **COMPLETE**
 
 ### Phase 5: Invitation System - In-App Notifications (~12-16 hours)
 - ⏳ Task 5.1: Create Convex Invitation Queries - **PENDING**
