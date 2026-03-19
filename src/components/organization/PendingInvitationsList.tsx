@@ -108,35 +108,50 @@ export default function PendingInvitationsList() {
 							<TableHead>Email</TableHead>
 							<TableHead>Role</TableHead>
 							<TableHead>Sent</TableHead>
+							<TableHead>Status</TableHead>
 							<TableHead className="text-right">Actions</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{invitations.map((invitation) => (
-							<TableRow key={invitation.id}>
-								<TableCell className="font-medium">
-									{invitation.email}
-								</TableCell>
-								<TableCell>
-									<span className="inline-block px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium capitalize">
-										{invitation.role}
-									</span>
-								</TableCell>
-								<TableCell className="text-muted-foreground">
-									{new Date(invitation.createdAt).toLocaleDateString()}
-								</TableCell>
-								<TableCell className="text-right">
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() => setCancelingId(invitation.id)}
-									>
-										<X className="h-4 w-4 mr-1" />
-										Cancel
-									</Button>
-								</TableCell>
-							</TableRow>
-						))}
+						{invitations.map((invitation) => {
+							const isExpired = new Date(invitation.expiresAt) < new Date()
+							return (
+								<TableRow key={invitation.id}>
+									<TableCell className="font-medium">
+										{invitation.email}
+									</TableCell>
+									<TableCell>
+										<span className="inline-block px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium capitalize">
+											{invitation.role}
+										</span>
+									</TableCell>
+									<TableCell className="text-muted-foreground">
+										{new Date(invitation.createdAt).toLocaleDateString()}
+									</TableCell>
+									<TableCell>
+										{isExpired ? (
+											<span className="inline-block px-2 py-1 rounded-md bg-destructive/10 text-destructive text-xs font-medium">
+												Expired
+											</span>
+										) : (
+											<span className="inline-block px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-medium">
+												Pending
+											</span>
+										)}
+									</TableCell>
+									<TableCell className="text-right">
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => setCancelingId(invitation.id)}
+										>
+											<X className="h-4 w-4 mr-1" />
+											Cancel
+										</Button>
+									</TableCell>
+								</TableRow>
+							)
+						})}
 					</TableBody>
 				</Table>
 			</div>

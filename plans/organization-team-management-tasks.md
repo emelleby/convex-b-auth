@@ -26,7 +26,7 @@
 - ✅ Task 3.2: Create Members List Component - **COMPLETE**
 - ✅ Task 3.3: Create Invite Member Dialog - **COMPLETE**
 - ✅ Task 3.4: Create Pending Invitations List Component - **COMPLETE**
-- ⏳ Task 3.5: Create Organization Settings Component - **PENDING**
+- ✅ Task 3.5: Create Organization Settings Component - **COMPLETE**
 
 ### Phase 4: Team Management UI (~14-18 hours)
 - ⏳ Task 4.1: Create Teams List Component - **PENDING**

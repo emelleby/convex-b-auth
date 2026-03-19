@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Building2, Mail, Settings, UserCog, Users } from 'lucide-react'
 import MembersList from '@/components/organization/MembersList'
+import OrgSettings from '@/components/organization/OrgSettings'
 import PendingInvitationsList from '@/components/organization/PendingInvitationsList'
 import {
 	Card,
@@ -131,18 +132,7 @@ function OrganizationPage() {
 				</TabsContent>
 
 				<TabsContent value="settings" className="mt-6">
-					<Card>
-						<CardHeader>
-							<CardTitle>Settings</CardTitle>
-							<CardDescription>
-								Organization settings and danger zone
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							{/* TODO: OrgSettings component */}
-							<p>Settings will go here</p>
-						</CardContent>
-					</Card>
+					<OrgSettings />
 				</TabsContent>
 			</Tabs>
 		</div>
