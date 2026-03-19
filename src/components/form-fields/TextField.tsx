@@ -2,7 +2,7 @@ import {
 	Field,
 	FieldDescription,
 	FieldError,
-	FieldLabel,
+	FieldLabel
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { useFieldContext } from '@/hooks/form-context'
@@ -15,6 +15,7 @@ interface TextFieldProps {
 	disabled?: boolean
 	type?: 'text' | 'email' | 'password' | 'tel' | 'url' | 'number'
 	autoComplete?: string
+	onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
 }
 
 export function TextField({
@@ -25,6 +26,7 @@ export function TextField({
 	disabled,
 	type = 'text',
 	autoComplete,
+	onChange
 }: TextFieldProps) {
 	const field = useFieldContext<string>()
 	const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
@@ -43,6 +45,7 @@ export function TextField({
 					const value =
 						type === 'number' && rawValue !== '' ? Number(rawValue) : rawValue
 					field.handleChange(value as any)
+					onChange?.(e)
 				}}
 				aria-invalid={isInvalid}
 				placeholder={placeholder}
