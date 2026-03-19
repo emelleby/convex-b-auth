@@ -299,3 +299,22 @@ export const cancelJoinRequest = mutation({
   },
 })
 
+
+export const countPendingJoinRequests = query({
+  args: {
+    organizationId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireAuth(ctx).catch(() => null)
+    if (!user || !user.userId) return 0
+    
+    const requests = await ctx.db
+      .query('joinRequest')
+      .withIndex('by_status_and_organizationId', (q) =>
+        q.eq('status', 'pending').eq('organizationId', args.organizationId)
+      )
+      .collect()
+      
+    return requests.length
+  },
+})

@@ -35,8 +35,8 @@
 - ✅ Task 4.4: Update App Sidebar with Team Switcher - **COMPLETE**
 
 ### Phase 5: Invitation System - In-App Notifications (~12-16 hours)
-- ⏳ Task 5.1: Create Convex Invitation Queries - **PENDING**
-- ⏳ Task 5.2: Create useNotifications Hook - **PENDING**
+- ✅ Task 5.1: Create Convex Invitation Queries - **COMPLETE**
+- ✅ Task 5.2: Create useNotifications Hook - **COMPLETE**
 - ⏳ Task 5.3: Create Notification Center Component - **PENDING**
 - ⏳ Task 5.4: Create Full Invitations Page - **PENDING**
 - ⏳ Task 5.5: Update Nav User with Notification Center - **PENDING**
@@ -3382,14 +3382,14 @@ export const countPendingJoinRequests = query({
 **Dependencies**: Tasks 4.1, 4.2 complete
 
 **Context**:
-A dropdown notification center accessible from the header/nav area, showing pending invitations with accept/decline actions. Uses the `useNotifications` hook which provides real-time data via Convex subscriptions.
+A dropdown notification center accessible from the header, showing pending invitations with accept/decline actions. Uses the `useNotifications` hook which provides real-time data via Convex subscriptions. Notification center should show both pending invitations and pending join requests to review (for admins). 
 
 **Requirements**:
 - **File to create**: `src/components/NotificationCenter.tsx`
 - Bell icon with unread count badge
-- Dropdown with invitation list
-- Accept/decline actions per invitation
-- Link to full invitations page
+- Dropdown with notification list
+- Link to full invitations page(For admins, link to organization settings invitations tab)
+- Accept/decline actions per invitation(for users - that are invited)
 
 **Implementation Steps**:
 
@@ -3571,10 +3571,10 @@ export function NotificationCenter() {
 - [ ] `src/components/NotificationCenter.tsx` exists
 - [ ] Bell icon with badge showing unread count
 - [ ] Dropdown lists pending invitations
-- [ ] Accept/decline buttons work
+- [ ] Accept/decline buttons work for users
 - [ ] Loading state while processing
 - [ ] Empty state when no notifications
-- [ ] Link to full invitations page
+- [ ] Link to full invitations page (For admins, link to organization settings invitations tab)
 - [ ] **Real-time updates** - invitation appears/disappears instantly
 
 **Testing Instructions**:
