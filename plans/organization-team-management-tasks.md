@@ -3050,7 +3050,7 @@ import { TeamSwitcherInOrg } from '@/components/TeamSwitcherInOrg'
 
 > **Architecture Note**: This phase leverages **Convex's native real-time reactivity** instead of TanStack Store with polling. Convex queries automatically subscribe to data changes and re-render components when data updates. This is simpler, more efficient, and provides instant updates.
 
-### Task 5.1: Create Convex Invitation Queries
+### Task 5.1: Create Convex Invitation Queries ✅ COMPLETE
 
 **Complexity**: Medium (2-3 hours)
 
@@ -3059,11 +3059,17 @@ import { TeamSwitcherInOrg } from '@/components/TeamSwitcherInOrg'
 **Context**:
 Better-Auth stores invitations in Convex tables via its Convex adapter. We need Convex queries to fetch pending invitations for the current user. These queries will use Convex's reactive subscription system for real-time updates without polling.
 
+**Implemented**: `convex/invitations.ts`
+- Query `listPendingForUser` lists pending invitations using `components.betterAuth.adapter.findMany`
+- Query `getPendingCount` fetches only the count of pending invitations for a specific user.
+- Query `getInvitation` fetches a single invitation by id using `components.betterAuth.adapter.findOne`
+- Uses `requireAuth` from `auth_helpers.ts` for proper authentication.
+
 **Requirements**:
-- **File to create**: `convex/invitations.ts`
-- Query to list pending invitations for current user
-- Query to get invitation count (for badge)
-- Proper authentication and authorization
+- **File to create**: `convex/invitations.ts` ✅
+- Query to list pending invitations for current user ✅
+- Query to get invitation count (for badge) ✅
+- Proper authentication and authorization ✅
 
 **Why Convex over TanStack Store + Polling**:
 - ✅ **Real-time**: Automatic updates when any invitation changes
@@ -3193,11 +3199,11 @@ export const getInvitation = query({
 2. Note: The `invitation` table is created by Better-Auth's Convex adapter. Check the schema to verify the table structure.
 
 **Acceptance Criteria**:
-- [ ] `convex/invitations.ts` exists
-- [ ] `listPendingForUser` returns pending invitations with org details
-- [ ] `getPendingCount` returns integer count for badge
-- [ ] Queries require authentication
-- [ ] Real-time updates work (test by creating invitation in another tab)
+- [x] `convex/invitations.ts` exists
+- [x] `listPendingForUser` returns pending invitations with org details
+- [x] `getPendingCount` returns integer count for badge
+- [x] Queries require authentication
+- [x] Real-time updates work (test by creating invitation in another tab)
 
 **Testing Instructions**:
 1. Log in as user
@@ -3205,7 +3211,7 @@ export const getInvitation = query({
 3. Verify the invitation appears instantly (no refresh needed)
 4. Accept the invitation, verify it disappears from list instantly
 
-**Definition of Done**: Convex invitation queries work with real-time reactivity.
+**Definition of Done**: Convex invitation queries work with real-time reactivity. ✅ COMPLETE
 
 ---
 
