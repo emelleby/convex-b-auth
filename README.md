@@ -1,219 +1,95 @@
-Welcome to your new TanStack Start app! 
+# Convex Better Auth Starter
 
-# Getting Started
+A modern, type-safe full-stack starter built with [TanStack Start](https://tanstack.com/start), [Convex](https://convex.dev/), and [Better Auth](https://www.better-auth.com/).
 
-To run this application:
+## 🚀 Key Features
 
+- **Full-stack React**: Powered by TanStack Start (SSR, Streaming, Server Functions).
+- **Backend as a Service**: [Convex](https://convex.dev/) for real-time database, file storage, and serverless functions.
+- **Authentication**: Fully integrated [Better Auth](https://www.better-auth.com/) with a native Convex adapter.
+- **Organization & Team Management**: Multi-tenant support with organizations and teams out of the box.
+- **Internationalization**: [ParaglideJS](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) for type-safe i18n and localized routing.
+- **Type-safe Form Handling**: `useAppForm` pattern built on TanStack Form.
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) with [shadcn/ui](https://ui.shadcn.com/) components.
+- **Tooling**: [Biome](https://biomejs.dev/) for ultra-fast linting and formatting.
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Frontend** | React 18, TanStack Router, TanStack Start |
+| **Database** | Convex (Real-time, Document-based) |
+| **Auth** | Better Auth + Convex Adapter |
+| **I18n** | ParaglideJS + Inlang |
+| **Forms** | TanStack Form + Zod |
+| **Styling** | Tailwind CSS v4, Lucide React, Radix UI |
+| **Runtime** | Bun |
+
+## 🏁 Getting Started
+
+### 1. Prerequisites
+Ensure you have [Bun](https://bun.sh/) installed.
+
+### 2. Installation
 ```bash
 bun install
-bun --bun run dev
 ```
 
-# Building For Production
+### 3. Configure Convex
+```bash
+# Initialize Convex (creates .env.local)
+bunx convex dev
+```
 
-To build this application for production:
+### 4. Run Development Server
+```bash
+bun dev
+```
+
+## 🏗 Project Structure
+
+- `convex/`: Convex backend schema, mutations, and queries.
+  - `betterAuth/`: The authentication component and adapter.
+- `src/`: TanStack Start frontend application.
+  - `routes/`: File-based routing (TanStack Router).
+  - `components/`: UI components (including `ui/` from shadcn).
+  - `lib/`: Auth clients and utility functions.
+  - `paraglide/`: Generated i18n runtime.
+
+## 🧬 Demo Capabilities
+
+Explore the `src/routes/demo/` directory to see examples of the stack in action:
+
+- **Auth** (`/demo/auth`): Sign up, sign in, and organization switching.
+- **Convex** (`/demo/convex`): Real-time data fetching and mutations.
+- **Forms** (`/demo/form.simple`, `/demo/form.address`): Type-safe forms with validation.
+- **i18n** (`/demo/i18n`): Localized strings and routing.
+- **Table** (`/demo/table`): Data table implementation with shadcn.
+- **TanStack Query** (`/demo/tanstack-query`): Server-state management.
+
+## 🔒 Authentication & Authorization
+
+This project uses **Better Auth** with the **Organization Plugin**. 
+
+- **Client-side**: Use `authClient` from `src/lib/auth-client.ts`.
+- **Server-side**: Use `auth` from `src/lib/auth-server.ts` or `ctx.runQuery(components.betterAuth.adapter.getSession, ...)` in Convex.
+- **Middleware**: Protected routes are defined in `src/routes/_authed`.
+
+## 🌍 Localization (i18n)
+
+- Messages live in `project.inlang/`.
+- Run the dev server to regenerate `src/paraglide`.
+- URLs are automatically localized (e.g., `/en/about`, `/no/about`).
+
+## 🧪 Testing
 
 ```bash
-bun --bun run build
+bun test
 ```
 
-## Testing
-
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+## 🧹 Linting & Formatting
 
 ```bash
-bun --bun run test
+bun lint   # Check for issues
+bun format # Fix formatting
 ```
-
-## Styling
-
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `bun install @tailwindcss/vite tailwindcss -D`
-
-## Linting & Formatting
-
-This project uses [Biome](https://biomejs.dev/) for linting and formatting. The following scripts are available:
-
-
-```bash
-bun --bun run lint
-bun --bun run format
-bun --bun run check
-```
-
-
-## Setting up Convex
-
-- Set the `VITE_CONVEX_URL` and `CONVEX_DEPLOYMENT` environment variables in your `.env.local`. (Or run `bunx --bun convex init` to set them automatically.)
-- Run `bunx --bun convex dev` to start the Convex server.
-
-
-# Paraglide i18n
-
-This add-on wires up ParaglideJS for localized routing and message formatting.
-
-- Messages live in `project.inlang/messages`.
-- URLs are localized through the Paraglide Vite plugin and router `rewrite` hooks.
-- Run the dev server or build to regenerate the `src/paraglide` outputs.
-
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).

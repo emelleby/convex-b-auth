@@ -1,0 +1,651 @@
+{
+  "communities": {
+    "0": [
+      "components_header_header",
+      "paraglide_runtime_aggregategroups",
+      "paraglide_runtime_assertislocale",
+      "paraglide_runtime_defaulturlpatternextractlocale",
+      "paraglide_runtime_definecustomclientstrategy",
+      "paraglide_runtime_definecustomserverstrategy",
+      "paraglide_runtime_delocalizehref",
+      "paraglide_runtime_delocalizeurl",
+      "paraglide_runtime_delocalizeurldefaultpattern",
+      "paraglide_runtime_extractlocalefromcookie",
+      "paraglide_runtime_extractlocalefromheader",
+      "paraglide_runtime_extractlocalefromnavigator",
+      "paraglide_runtime_extractlocalefromrequest",
+      "paraglide_runtime_extractlocalefromrequestasync",
+      "paraglide_runtime_extractlocalefromrequestwithstrategies",
+      "paraglide_runtime_extractlocalefromurl",
+      "paraglide_runtime_fillmissingurlparts",
+      "paraglide_runtime_fillpattern",
+      "paraglide_runtime_findmatchingroutestrategy",
+      "paraglide_runtime_generatestaticlocalizedurls",
+      "paraglide_runtime_getlocale",
+      "paraglide_runtime_getlocaleforurl",
+      "paraglide_runtime_getstrategyforurl",
+      "paraglide_runtime_gettextdirection",
+      "paraglide_runtime_geturlorigin",
+      "paraglide_runtime_iscustomstrategy",
+      "paraglide_runtime_isexcludedbyroutestrategy",
+      "paraglide_runtime_islocale",
+      "paraglide_runtime_localizehref",
+      "paraglide_runtime_localizeurl",
+      "paraglide_runtime_localizeurldefaultpattern",
+      "paraglide_runtime_navigateorreload",
+      "paraglide_runtime_normalizeurl",
+      "paraglide_runtime_overwritegetlocale",
+      "paraglide_runtime_overwritegeturlorigin",
+      "paraglide_runtime_overwriteserverasynclocalstorage",
+      "paraglide_runtime_overwritesetlocale",
+      "paraglide_runtime_resolvelocale",
+      "paraglide_runtime_resolvelocalewithstrategies",
+      "paraglide_runtime_resolveurl",
+      "paraglide_runtime_setlocale",
+      "paraglide_runtime_shouldredirect",
+      "paraglide_runtime_tolocale",
+      "paraglide_runtime_trackmessagecall",
+      "src_components_header_tsx",
+      "src_components_localeswitcher_tsx",
+      "src_paraglide_runtime_js",
+      "src_routes_root_tsx"
+    ],
+    "1": [
+      "form_fields_comboboxfield_handlecustomadd",
+      "form_fields_comboboxfield_handleselect",
+      "hooks_tanstack_form_field",
+      "hooks_tanstack_form_fielderror",
+      "hooks_tanstack_form_form",
+      "lib_utils_cn",
+      "src_components_form_fields_comboboxfield_tsx",
+      "src_components_form_fields_country_dropdown_tsx",
+      "src_components_ui_avatar_tsx",
+      "src_components_ui_breadcrumb_tsx",
+      "src_components_ui_button_tsx",
+      "src_components_ui_command_tsx",
+      "src_components_ui_field_tsx",
+      "src_components_ui_label_tsx",
+      "src_components_ui_popover_tsx",
+      "src_components_ui_radio_group_tsx",
+      "src_components_ui_select_tsx",
+      "src_components_ui_separator_tsx",
+      "src_components_ui_sheet_tsx",
+      "src_components_ui_spinner_tsx",
+      "src_components_ui_switch_tsx",
+      "src_components_ui_table_tsx",
+      "src_components_ui_tabs_tsx",
+      "src_components_ui_textarea_tsx",
+      "src_components_ui_tooltip_tsx",
+      "src_hooks_tanstack_form_tsx",
+      "src_lib_utils_ts",
+      "ui_button_cn",
+      "ui_field_cn"
+    ],
+    "2": [
+      "authed_route_routecomponent",
+      "components_app_sidebar_appsidebar",
+      "components_nav_projects_navprojects",
+      "components_nav_secondary_navsecondary",
+      "components_nav_user_getinitials",
+      "components_org_switcher_handleorgcreated",
+      "components_org_switcher_handleselectorg",
+      "components_teamswitcherinorg_handleselectteam",
+      "hooks_use_mobile_useismobile",
+      "src_components_app_sidebar_tsx",
+      "src_components_languageswitcher_tsx",
+      "src_components_nav_projects_tsx",
+      "src_components_nav_secondary_tsx",
+      "src_components_nav_user_tsx",
+      "src_components_org_switcher_tsx",
+      "src_components_teamswitcherinorg_tsx",
+      "src_components_ui_dropdown_menu_tsx",
+      "src_components_ui_sidebar_tsx",
+      "src_hooks_use_mobile_tsx",
+      "src_routes_authed_route_tsx",
+      "ui_dropdown_menu_cn",
+      "ui_dropdown_menu_dropdownmenuportal",
+      "ui_dropdown_menu_dropdownmenuradioitem",
+      "ui_dropdown_menu_dropdownmenutrigger",
+      "ui_sidebar_cn",
+      "ui_sidebar_handlekeydown",
+      "ui_sidebar_usesidebar"
+    ],
+    "3": [
+      "hooks_use_form_focusfirsterror",
+      "hooks_use_form_withfocusmanagement",
+      "organization_createorganizationdialog_handleclose",
+      "organization_createorganizationdialog_handleopenchange",
+      "organization_invitememberdialog_handleopenchange",
+      "organization_memberslist_debouncedinput",
+      "organization_memberslist_fuzzyfilter",
+      "organization_memberslist_fuzzysort",
+      "organization_memberslist_sortableheader",
+      "organization_teamdialog_handleopenchange",
+      "organization_teamslist_debouncedinput",
+      "organization_teamslist_fuzzyfilter",
+      "organization_teamslist_sortableheader",
+      "src_components_organization_createorganizationdialog_tsx",
+      "src_components_organization_invitememberdialog_tsx",
+      "src_components_organization_memberslist_tsx",
+      "src_components_organization_pendinginvitationslist_tsx",
+      "src_components_organization_teamdialog_tsx",
+      "src_components_organization_teamslist_tsx",
+      "src_components_ui_dialog_tsx",
+      "src_components_ui_skeleton_tsx",
+      "src_hooks_use_form_tsx",
+      "ui_dialog_cn",
+      "ui_dialog_dialogdescription",
+      "ui_dialog_dialogoverlay",
+      "ui_skeleton_skeleton"
+    ],
+    "4": [
+      "demo_tanstack_query_avatar",
+      "demo_tanstack_query_handleadd",
+      "demo_tanstack_query_handleupdate",
+      "demo_tanstack_query_openedit",
+      "demo_tanstack_query_personskeleton",
+      "demo_tanstack_query_showtoast",
+      "form_fields_imagefield_handledragenter",
+      "form_fields_imagefield_handledragleave",
+      "form_fields_imagefield_handledragover",
+      "form_fields_numberfield_handlechange",
+      "form_fields_textfield_textfield",
+      "paraglide_registry_datetime",
+      "paraglide_registry_number",
+      "paraglide_registry_plural",
+      "src_components_form_fields_imagefield_tsx",
+      "src_components_form_fields_numberfield_tsx",
+      "src_components_form_fields_textfield_tsx",
+      "src_components_mvpblocks_login_signup_tsx",
+      "src_components_ui_input_group_tsx",
+      "src_components_ui_input_tsx",
+      "src_paraglide_registry_js",
+      "src_routes_demo_auth_tsx",
+      "src_routes_demo_tanstack_query_tsx",
+      "ui_input_group_cn",
+      "ui_input_input"
+    ],
+    "5": [
+      "messages_current_locale_de_current_locale",
+      "messages_current_locale_en_current_locale",
+      "messages_current_locale_no_current_locale",
+      "messages_example_message_de_example_message",
+      "messages_example_message_en_example_message",
+      "messages_example_message_no_example_message",
+      "messages_home_page_de_home_page",
+      "messages_home_page_en_home_page",
+      "messages_home_page_no_home_page",
+      "messages_language_label_de_language_label",
+      "messages_language_label_en_language_label",
+      "messages_language_label_no_language_label",
+      "messages_learn_router_de_learn_router",
+      "messages_learn_router_en_learn_router",
+      "messages_learn_router_no_learn_router",
+      "src_paraglide_messages_current_locale_js",
+      "src_paraglide_messages_example_message_js",
+      "src_paraglide_messages_home_page_js",
+      "src_paraglide_messages_language_label_js",
+      "src_paraglide_messages_learn_router_js"
+    ],
+    "6": [
+      "better-auth",
+      "betterauth_auth_createauth",
+      "betterauth_auth_createauthoptions",
+      "convex_auth_helpers_requireauth",
+      "convex_auth_helpers_ts",
+      "convex_auth_ts",
+      "convex_betterauth_adapter_ts",
+      "convex_betterauth_auth_ts",
+      "convex_betterauth_generated_api_ts",
+      "convex_generated_api_d_ts",
+      "convex_http_ts",
+      "convex_invitations_ts",
+      "convex_joinrequests_generateid",
+      "convex_joinrequests_ts",
+      "convex_people_requireauth",
+      "convex_people_ts",
+      "convex_testauth_ts",
+      "convex_todos_ts",
+      "organization-plugin"
+    ],
+    "7": [
+      "app_organization_organizationpage",
+      "components_settings_settingspage",
+      "organization_orgsettings_handledelete",
+      "organization_orgsettings_handlesave",
+      "src_components_organization_orgsettings_tsx",
+      "src_components_settings_tsx",
+      "src_components_ui_card_tsx",
+      "src_routes_authed_app_organization_tsx",
+      "ui_card_carddescription",
+      "ui_card_cardfooter",
+      "ui_card_cn"
+    ],
+    "8": [
+      "app_notifications_async",
+      "components_notificationcenter_handleacceptinvitation",
+      "components_notificationcenter_handledeclineinvitation",
+      "hooks_usenotificationactions_usenotificationactions",
+      "hooks_usenotifications_usenotificationcount",
+      "hooks_usenotifications_usenotifications",
+      "src_components_notificationcenter_tsx",
+      "src_hooks_usenotificationactions_ts",
+      "src_hooks_usenotifications_ts",
+      "src_routes_authed_app_notifications_tsx"
+    ],
+    "9": [
+      "data_demo_table_data_makedata",
+      "data_demo_table_data_newperson",
+      "data_demo_table_data_range",
+      "demo_table_flexrender",
+      "demo_table_fuzzyfilter",
+      "demo_table_fuzzysort",
+      "demo_table_refreshdata",
+      "src_data_demo_table_data_ts",
+      "src_routes_demo_table_tsx"
+    ],
+    "10": [
+      "components_notfound_notfound",
+      "src_components_notfound_tsx",
+      "src_integrations_tanstack_query_root_provider_tsx",
+      "src_router_getrouter",
+      "src_router_tsx",
+      "src_routetree_gen_ts",
+      "tanstack_query_root_provider_getcontext",
+      "tanstack_query_root_provider_tanstackqueryprovider"
+    ],
+    "11": [
+      "demo_storybook_handlereset",
+      "demo_storybook_handlesubmit",
+      "src_components_storybook_button_stories_ts",
+      "src_components_storybook_button_tsx",
+      "src_components_storybook_dialog_stories_tsx",
+      "src_routes_demo_storybook_tsx",
+      "storybook_button_button"
+    ],
+    "12": [
+      "organization_invitememberdialog_test_appfield",
+      "organization_invitememberdialog_test_appform",
+      "organization_invitememberdialog_test_handlesubmit",
+      "organization_invitememberdialog_test_reset",
+      "organization_invitememberdialog_test_submitbutton",
+      "organization_invitememberdialog_test_usedialogcontext",
+      "src_components_organization_invitememberdialog_test_tsx"
+    ],
+    "13": [
+      "paraglide_server_clonerequestwithfallback",
+      "paraglide_server_createmockasynclocalstorage",
+      "paraglide_server_paraglidemiddleware",
+      "src_paraglide_server_js",
+      "src_server_fetch",
+      "src_server_ts"
+    ],
+    "14": [
+      "authComponent",
+      "convex/auth.ts",
+      "convex/auth_helpers.ts",
+      "convex/betterAuth/adapter.ts",
+      "convex/betterAuth/auth.ts",
+      "convex/betterAuth/schema.ts"
+    ],
+    "15": [
+      "convex-b-auth",
+      "paraglide-js",
+      "tanstack-router",
+      "tanstack-start",
+      "vite_config_ts"
+    ],
+    "16": [
+      "lib_demo_store_devtools_devtoolpanel",
+      "lib_demo_store_devtools_storedevtoolseventclient",
+      "lib_demo_store_devtools_storedevtoolseventclient_constructor",
+      "src_lib_demo_store_devtools_tsx"
+    ],
+    "17": [
+      "components_themetoggle_applythememode",
+      "components_themetoggle_getinitialmode",
+      "components_themetoggle_themetoggle",
+      "src_components_themetoggle_tsx"
+    ],
+    "18": [
+      "messages_about_page_de_about_page",
+      "messages_about_page_en_about_page",
+      "messages_about_page_no_about_page",
+      "src_paraglide_messages_about_page_js"
+    ],
+    "19": [
+      "convex_betterauth_generated_datamodel_ts",
+      "convex_betterauth_generated_server_ts",
+      "convex_betterauth_schema_ts"
+    ],
+    "20": [
+      "demo_store_demostore",
+      "demo_store_firstname",
+      "src_routes_demo_store_tsx"
+    ],
+    "21": [
+      "public_login_issameorigin",
+      "public_login_loginpage",
+      "src_routes_public_login_tsx"
+    ],
+    "22": [
+      "src/components/app-sidebar.tsx",
+      "src/components/org-switcher.tsx",
+      "src/routes/_authed/route.tsx"
+    ],
+    "23": [
+      "convex_generated_datamodel_d_ts",
+      "convex_schema_ts"
+    ],
+    "24": [
+      "routes_api_handle",
+      "src_routes_api_ts"
+    ],
+    "25": [
+      "routes_api_rpc_handle",
+      "src_routes_api_rpc_ts"
+    ],
+    "26": [
+      "app_invitations_invitationspage",
+      "src_routes_authed_app_invitations_tsx"
+    ],
+    "27": [
+      "app_index_routecomponent",
+      "src_routes_authed_app_index_tsx"
+    ],
+    "28": [
+      "demo_i18n_app",
+      "src_routes_demo_i18n_tsx"
+    ],
+    "29": [
+      "demo_form_simple_simpleform",
+      "src_routes_demo_form_simple_tsx"
+    ],
+    "30": [
+      "public_route_routecomponent",
+      "src_routes_public_route_tsx"
+    ],
+    "31": [
+      "public_about_about",
+      "src_routes_public_about_tsx"
+    ],
+    "32": [
+      "components_footer_footer",
+      "src_components_footer_tsx"
+    ],
+    "33": [
+      "components_authbutton_authbutton",
+      "src_components_authbutton_tsx"
+    ],
+    "34": [
+      "form_fields_radiogroupfield_radiogroupfield",
+      "src_components_form_fields_radiogroupfield_tsx"
+    ],
+    "35": [
+      "form_fields_switchfield_switchfield",
+      "src_components_form_fields_switchfield_tsx"
+    ],
+    "36": [
+      "form_fields_selectfield_selectfield",
+      "src_components_form_fields_selectfield_tsx"
+    ],
+    "37": [
+      "form_fields_countryfield_countryfield",
+      "src_components_form_fields_countryfield_tsx"
+    ],
+    "38": [
+      "form_fields_textareafield_textareafield",
+      "src_components_form_fields_textareafield_tsx"
+    ],
+    "39": [
+      "convex_provider_appconvexprovider",
+      "src_integrations_convex_provider_tsx"
+    ],
+    "40": [
+      "betterAuthComponent",
+      "convex/convex.config.ts"
+    ],
+    "41": [
+      "src/router.tsx",
+      "src/routes/__root.tsx"
+    ],
+    "42": [
+      "convex_convex_config_ts"
+    ],
+    "43": [
+      "convex_auth_config_ts"
+    ],
+    "44": [
+      "convex_generated_api_js"
+    ],
+    "45": [
+      "convex_generated_server_d_ts"
+    ],
+    "46": [
+      "convex_generated_server_js"
+    ],
+    "47": [
+      "convex_betterauth_convex_config_ts"
+    ],
+    "48": [
+      "convex_betterauth_generated_component_ts"
+    ],
+    "49": [
+      "src_polyfill_ts"
+    ],
+    "50": [
+      "src_routes_demo_convex_tsx"
+    ],
+    "51": [
+      "src_routes_demo_form_address_tsx"
+    ],
+    "52": [
+      "src_routes_demo_orpc_todo_tsx"
+    ],
+    "53": [
+      "src_routes_public_index_tsx"
+    ],
+    "54": [
+      "src_routes_api_auth_ts"
+    ],
+    "55": [
+      "src_orpc_client_ts"
+    ],
+    "56": [
+      "src_orpc_schema_ts"
+    ],
+    "57": [
+      "src_orpc_router_todos_ts"
+    ],
+    "58": [
+      "src_orpc_router_index_ts"
+    ],
+    "59": [
+      "src_lib_auth_client_ts"
+    ],
+    "60": [
+      "src_lib_demo_store_ts"
+    ],
+    "61": [
+      "src_lib_auth_server_ts"
+    ],
+    "62": [
+      "src_hooks_demo_form_ts"
+    ],
+    "63": [
+      "src_hooks_demo_form_context_ts"
+    ],
+    "64": [
+      "src_hooks_form_context_ts"
+    ],
+    "65": [
+      "src_components_defaultcatchboundary_tsx"
+    ],
+    "66": [
+      "src_components_demo_formcomponents_tsx"
+    ],
+    "67": [
+      "src_components_nav_main_tsx"
+    ],
+    "68": [
+      "src_components_userprofile_tsx"
+    ],
+    "69": [
+      "src_components_storybook_radio_group_tsx"
+    ],
+    "70": [
+      "src_components_storybook_input_tsx"
+    ],
+    "71": [
+      "src_components_storybook_radio_group_stories_ts"
+    ],
+    "72": [
+      "src_components_storybook_slider_stories_ts"
+    ],
+    "73": [
+      "src_components_storybook_dialog_tsx"
+    ],
+    "74": [
+      "src_components_storybook_slider_tsx"
+    ],
+    "75": [
+      "src_components_storybook_input_stories_ts"
+    ],
+    "76": [
+      "src_components_storybook_index_ts"
+    ],
+    "77": [
+      "src_components_ui_collapsible_tsx"
+    ],
+    "78": [
+      "src_components_ui_sonner_tsx"
+    ],
+    "79": [
+      "src_components_form_fields_index_ts"
+    ],
+    "80": [
+      "src_components_form_fields_form_buttons_tsx"
+    ],
+    "81": [
+      "src_integrations_tanstack_query_devtools_tsx"
+    ],
+    "82": [
+      "src_paraglide_messages_js"
+    ],
+    "83": [
+      "src_paraglide_messages_index_js"
+    ],
+    "84": [
+      "convex/auth.config.ts"
+    ],
+    "85": [
+      "convex/schema.ts"
+    ],
+    "86": [
+      "src/lib/auth-client.ts"
+    ],
+    "87": [
+      "src/lib/auth-server.ts"
+    ],
+    "88": [
+      "authentication-flow-doc"
+    ],
+    "89": [
+      "org-team-management-plan"
+    ],
+    "90": [
+      "schema-analysis-doc"
+    ],
+    "91": [
+      "teams-lifecycle-doc"
+    ]
+  },
+  "cohesion": {},
+  "god_nodes": [
+    {
+      "id": "lib_utils_cn",
+      "label": "cn()",
+      "degree": 30
+    },
+    {
+      "id": "paraglide_runtime_getlocale",
+      "label": "getLocale()",
+      "degree": 16
+    },
+    {
+      "id": "ui_input_input",
+      "label": "Input()",
+      "degree": 12
+    },
+    {
+      "id": "paraglide_runtime_tolocale",
+      "label": "toLocale()",
+      "degree": 12
+    },
+    {
+      "id": "paraglide_runtime_localizeurl",
+      "label": "localizeUrl()",
+      "degree": 12
+    },
+    {
+      "id": "ui_dropdown_menu_dropdownmenutrigger",
+      "label": "DropdownMenuTrigger()",
+      "degree": 9
+    },
+    {
+      "id": "paraglide_runtime_resolvelocalewithstrategies",
+      "label": "resolveLocaleWithStrategies()",
+      "degree": 9
+    },
+    {
+      "id": "ui_dialog_dialogdescription",
+      "label": "DialogDescription()",
+      "degree": 8
+    },
+    {
+      "id": "paraglide_runtime_getstrategyforurl",
+      "label": "getStrategyForUrl()",
+      "degree": 8
+    },
+    {
+      "id": "paraglide_runtime_shouldredirect",
+      "label": "shouldRedirect()",
+      "degree": 8
+    }
+  ],
+  "surprises": [
+    {
+      "source": "fetch()",
+      "target": "paraglideMiddleware()",
+      "source_files": [
+        "src/server.ts",
+        "src/paraglide/server.js"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; peripheral node `fetch()` unexpectedly reaches hub `paraglideMiddleware()`"
+    },
+    {
+      "source": "NavProjects()",
+      "target": "useSidebar()",
+      "source_files": [
+        "src/components/nav-projects.tsx",
+        "src/components/ui/sidebar.tsx"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source"
+    },
+    {
+      "source": "handleChange()",
+      "target": "number()",
+      "source_files": [
+        "src/components/form-fields/NumberField.tsx",
+        "src/paraglide/registry.js"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source"
+    }
+  ]
+}
