@@ -27,6 +27,7 @@ import {
 	useSidebar
 } from '@/components/ui/sidebar'
 import { authClient } from '@/lib/auth-client'
+import { Link } from '@tanstack/react-router'
 
 export function NavUser() {
 	const { isMobile } = useSidebar()
@@ -136,9 +137,11 @@ export function NavUser() {
 								<CreditCard />
 								Billing
 							</DropdownMenuItem>
-							<DropdownMenuItem>
-								<Bell />
-								Notifications
+							<DropdownMenuItem asChild>
+								<Link to="/app/notifications" className="flex items-center w-full cursor-pointer">
+									<Bell />
+									Notifications
+								</Link>
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />

@@ -29,6 +29,8 @@ import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthedAppOrganizationRouteImport } from './routes/_authed/app/organization'
+import { Route as AuthedAppNotificationsRouteImport } from './routes/_authed/app/notifications'
+import { Route as AuthedAppInvitationsRouteImport } from './routes/_authed/app/invitations'
 
 const PublicRouteRoute = PublicRouteRouteImport.update({
   id: '/_public',
@@ -128,6 +130,16 @@ const AuthedAppOrganizationRoute = AuthedAppOrganizationRouteImport.update({
   path: '/app/organization',
   getParentRoute: () => AuthedRouteRoute,
 } as any)
+const AuthedAppNotificationsRoute = AuthedAppNotificationsRouteImport.update({
+  id: '/app/notifications',
+  path: '/app/notifications',
+  getParentRoute: () => AuthedRouteRoute,
+} as any)
+const AuthedAppInvitationsRoute = AuthedAppInvitationsRouteImport.update({
+  id: '/app/invitations',
+  path: '/app/invitations',
+  getParentRoute: () => AuthedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
@@ -142,6 +154,8 @@ export interface FileRoutesByFullPath {
   '/demo/storybook': typeof DemoStorybookRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/app/invitations': typeof AuthedAppInvitationsRoute
+  '/app/notifications': typeof AuthedAppNotificationsRoute
   '/app/organization': typeof AuthedAppOrganizationRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
@@ -162,6 +176,8 @@ export interface FileRoutesByTo {
   '/demo/storybook': typeof DemoStorybookRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/app/invitations': typeof AuthedAppInvitationsRoute
+  '/app/notifications': typeof AuthedAppNotificationsRoute
   '/app/organization': typeof AuthedAppOrganizationRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
@@ -185,6 +201,8 @@ export interface FileRoutesById {
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/_public/': typeof PublicIndexRoute
+  '/_authed/app/invitations': typeof AuthedAppInvitationsRoute
+  '/_authed/app/notifications': typeof AuthedAppNotificationsRoute
   '/_authed/app/organization': typeof AuthedAppOrganizationRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
@@ -207,6 +225,8 @@ export interface FileRouteTypes {
     | '/demo/storybook'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/app/invitations'
+    | '/app/notifications'
     | '/app/organization'
     | '/api/auth/$'
     | '/api/rpc/$'
@@ -227,6 +247,8 @@ export interface FileRouteTypes {
     | '/demo/storybook'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/app/invitations'
+    | '/app/notifications'
     | '/app/organization'
     | '/api/auth/$'
     | '/api/rpc/$'
@@ -249,6 +271,8 @@ export interface FileRouteTypes {
     | '/demo/table'
     | '/demo/tanstack-query'
     | '/_public/'
+    | '/_authed/app/invitations'
+    | '/_authed/app/notifications'
     | '/_authed/app/organization'
     | '/api/auth/$'
     | '/api/rpc/$'
@@ -417,15 +441,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAppOrganizationRouteImport
       parentRoute: typeof AuthedRouteRoute
     }
+    '/_authed/app/notifications': {
+      id: '/_authed/app/notifications'
+      path: '/app/notifications'
+      fullPath: '/app/notifications'
+      preLoaderRoute: typeof AuthedAppNotificationsRouteImport
+      parentRoute: typeof AuthedRouteRoute
+    }
+    '/_authed/app/invitations': {
+      id: '/_authed/app/invitations'
+      path: '/app/invitations'
+      fullPath: '/app/invitations'
+      preLoaderRoute: typeof AuthedAppInvitationsRouteImport
+      parentRoute: typeof AuthedRouteRoute
+    }
   }
 }
 
 interface AuthedRouteRouteChildren {
+  AuthedAppInvitationsRoute: typeof AuthedAppInvitationsRoute
+  AuthedAppNotificationsRoute: typeof AuthedAppNotificationsRoute
   AuthedAppOrganizationRoute: typeof AuthedAppOrganizationRoute
   AuthedAppIndexRoute: typeof AuthedAppIndexRoute
 }
 
 const AuthedRouteRouteChildren: AuthedRouteRouteChildren = {
+  AuthedAppInvitationsRoute: AuthedAppInvitationsRoute,
+  AuthedAppNotificationsRoute: AuthedAppNotificationsRoute,
   AuthedAppOrganizationRoute: AuthedAppOrganizationRoute,
   AuthedAppIndexRoute: AuthedAppIndexRoute,
 }

@@ -1,6 +1,7 @@
 import { mutation, query } from './_generated/server'
 import { v } from 'convex/values'
 import { requireAuth } from './auth_helpers'
+import { authComponent } from './auth'
 import { components } from './_generated/api'
 
 // Generate a unique ID for joinRequest (which stores a custom id field)
@@ -19,10 +20,10 @@ export const createJoinRequest = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireAuth(ctx)
-    if (!user.userId) {
+    if (!user._id) {
       throw new Error('User ID is required')
     }
-    const userId = user.userId as string
+    const userId = user._id as string
 
     // Check if user already has a pending request for this org
     const existingRequest = await ctx.db
@@ -74,11 +75,10 @@ export const createJoinRequest = mutation({
 export const listMyJoinRequests = query({
   args: {},
   handler: async (ctx) => {
-    const user = await requireAuth(ctx)
-    if (!user.userId) {
-      throw new Error('User ID is required')
-    }
-    const userId = user.userId as string
+    // Use graceful fallback (like invitations.ts) to avoid throwing during auth transitions
+    const user = await authComponent.getAuthUser(ctx)
+    if (!user || !user._id) return []
+    const userId = user._id as string
 
     const requests = await ctx.db
       .query('joinRequest')
@@ -86,17 +86,18 @@ export const listMyJoinRequests = query({
       .order('desc')
       .collect()
 
-    // Enrich with organization names (via betterAuth component)
+    // Enrich with organization names via the Better Auth adapter.
+    // Use `_id` (not `id`) and cast to `any` per AGENTS.md conventions.
     const enrichedRequests = await Promise.all(
       requests.map(async (request) => {
-        const org = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
+        const org = await ctx.runQuery(components.betterAuth.adapter.findOne, {
           model: 'organization',
-          where: [{ field: '_id', value: request.organizationId }],
-        })) as { name: string } | null
+          where: [{ field: '_id', value: request.organizationId as any }],
+        })
 
         return {
           ...request,
-          organizationName: org?.name ?? 'Unknown Organization',
+          organizationName: (org as { name?: string } | null)?.name ?? 'Unknown Organization',
         }
       })
     )
@@ -114,11 +115,9 @@ export const listPendingJoinRequests = query({
     organizationId: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await requireAuth(ctx)
-    if (!user.userId) {
-      throw new Error('User ID is required')
-    }
-    const userId = user.userId as string
+    const user = await authComponent.getAuthUser(ctx)
+    if (!user || !user._id) return []
+    const userId = user._id as string
 
     // Verify user is admin/owner of this organization (via betterAuth component)
     const membership = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
@@ -155,10 +154,10 @@ export const approveJoinRequest = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireAuth(ctx)
-    if (!user.userId) {
+    if (!user._id) {
       throw new Error('User ID is required')
     }
-    const userId = user.userId as string
+    const userId = user._id as string
 
     // Find the request
     const request = await ctx.db
@@ -221,10 +220,10 @@ export const rejectJoinRequest = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireAuth(ctx)
-    if (!user.userId) {
+    if (!user._id) {
       throw new Error('User ID is required')
     }
-    const userId = user.userId as string
+    const userId = user._id as string
 
     const request = await ctx.db
       .query('joinRequest')
@@ -271,10 +270,10 @@ export const cancelJoinRequest = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireAuth(ctx)
-    if (!user.userId) {
+    if (!user._id) {
       throw new Error('User ID is required')
     }
-    const userId = user.userId as string
+    const userId = user._id as string
 
     const request = await ctx.db
       .query('joinRequest')
@@ -305,8 +304,8 @@ export const countPendingJoinRequests = query({
     organizationId: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await requireAuth(ctx).catch(() => null)
-    if (!user || !user.userId) return 0
+    const user = await authComponent.getAuthUser(ctx)
+    if (!user || !user._id) return 0
     
     const requests = await ctx.db
       .query('joinRequest')

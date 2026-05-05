@@ -37,9 +37,9 @@
 ### Phase 5: Invitation System - In-App Notifications (~12-16 hours)
 - ✅ Task 5.1: Create Convex Invitation Queries - **COMPLETE**
 - ✅ Task 5.2: Create useNotifications Hook - **COMPLETE**
-- ⏳ Task 5.3: Create Notification Center Component - **PENDING**
-- ⏳ Task 5.4: Create Full Invitations Page - **PENDING**
-- ⏳ Task 5.5: Update Nav User with Notification Center - **PENDING**
+- ✅ Task 5.3: Create Notification Center Component - **COMPLETE**
+- ✅ Task 5.4: Create Full Notifications Page - **COMPLETE**
+- ✅ Task 5.5: Update Nav User with Notification Center - **COMPLETE**
 
 ### Phase 6: Join Request System (~10-14 hours)
 - ⏳ Task 6.1: Extend Join Request API with Organization Discovery - **PENDING**
@@ -3588,253 +3588,132 @@ export function NotificationCenter() {
 
 ---
 
-### Task 5.4: Create Full Invitations Page
+### Task 5.4: Create Full Notifications Page
 
-**Complexity**: Medium (3-4 hours)
+**Complexity**: Medium (4-6 hours)
 
-**Dependencies**: Task 4.3 complete
+**Dependencies**: Task 4.3, 5.2 complete
 
 **Context**:
-A dedicated page showing all invitations (pending, accepted, rejected) and the user's join request history. Uses Convex reactive queries via the `useNotifications` hook for real-time updates.
+Replace the originally planned invitations page with a comprehensive **Notification Page**. This page serves as a central hub for all actionable alerts the user receives: pending organization invitations, the current status of their own join requests, and a foundational structure for future "General Notifications."
 
-**Requirements**:
-- **File to create**: `src/routes/_authed/app/invitations.tsx`
-- List all invitations with status
-- List user's join requests with status
-- Actions for pending items
-- Real-time updates via Convex subscriptions
+**1. Data Layer & Backend Logic**
+- **Pending Invitations**: The `useNotifications` hook already loads `pendingInvitations` via the real-time query `api.invitations.listPendingForUser`.
+- **My Join Requests**: Also already loaded via `api.joinRequests.listMyJoinRequests`.
+  - Actions on join requests: `cancelJoinRequest` is already defined in `convex/joinRequests.ts`.
+- **Future Extensibility**: In `convex/schema.ts`, a `notifications` table isn't created *yet*, but leave a placeholder comment in the page for it.
+- **Handling Accept/Decline**: 
+  - To respect Better Auth's adapter integration (see `AGENTS.md`), we use the built-in Better Auth client method to accept/decline invitations, as this properly registers user membership. Avoid creating custom Convex mutations for this unless absolutely necessary.
+  - When an invitation is accepted (`authClient.organization.acceptInvitation`), the user joins the org. If `authClient.useActiveOrganization()` returns `null`, the UI should immediately call `authClient.organization.setActive({ organizationId })` so they are contextually dropped into their new organization.
 
-**Implementation Steps**:
+**2. Auth & Better Auth Integration API Usage**
+- **Accept**: `authClient.organization.acceptInvitation({ invitationId: string })`
+- **Decline**: `authClient.organization.rejectInvitation({ invitationId: string })`
+- **Cancel Join Request**: `api.joinRequests.cancelJoinRequest` in Convex.
+- **Join Request Action**: When a user's join request is "approved", they are technically already added as a member by the admin's `approveJoinRequest` flow. Their "action" here is simply "Switch to Org", which invokes `authClient.organization.setActive({ organizationId })` and redirects them to the app.
 
-1. Create `src/routes/_authed/app/invitations.tsx`:
+**3. UI/UX (Frontend)**
 
+**Route & Navigation**:
+- **Path**: `src/routes/_authed/app/notifications.tsx`
+- **Link Update**: The "View all notifications" link inside `NotificationCenter.tsx` must point to `/app/notifications`.
+
+**Page Layout Details**:
+1. **Tabs or Sections**: Layout should clearly separate categories (or use tabs):
+   - **Invitations** (Primary focus if any are pending)
+   - **Join Requests** (Show all requests the user made: pending, approved, rejected)
+   - **System Alerts** (A greyed-out or minimal placeholder section reading "No system alerts" for the future `notifications` table)
+
+2. **Actions & Feedback**:
+   - Create a reusable hook (e.g., `useNotificationActions`) that wraps the API calls for accept/decline/cancel, and manages a `processingId` state. Use this hook in *both* this page and the `NotificationCenter` component to keep it DRY.
+   - For an **approved join request**, display a **"Switch to Organization"** button that invokes `setActive(orgId)` and navigates to `/app`.
+   - Provide loaders and empty states ("You have no pending invitations").
+
+**4. Implementation Order**:
+1. **Refactoring Shared Actions**: Extract the accept/decline logic currently residing in `NotificationCenter.tsx` into a reusable custom hook `src/hooks/useNotificationActions.ts`. Ensure the hook automatically checks if the user has an active org, and handles `setActive` upon accepting an invite.
+2. **Update Notification Center**: Update `NotificationCenter.tsx` to use the new `useNotificationActions` hook and correct the "View all notifications" link to `/app/notifications`.
+3. **Route Setup**: Create the basic route structure in `src/routes/_authed/app/notifications.tsx`.
+4. **Build UI Sections**: Build out the cards and lists for "Organization Invitations", "My Join Requests", and the "System Alerts" placeholder.
+5. **Wire Up Actions**: Attach the action hook methods to the respective buttons on the new page.
+
+**Implementation Steps (Code Guide)**:
+
+1. Create `src/hooks/useNotificationActions.ts` (Example outline):
 ```typescript
 import { useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
-import { Check, X, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { authClient } from '@/lib/auth-client'
-import { useNotifications } from '@/hooks/useNotifications'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useMutation as useConvexMutation } from 'convex/react'
+import { api } from '../../convex/_generated/api'
+import { useNavigate } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/_authed/app/invitations')({
-  component: InvitationsPage,
-})
-
-function InvitationsPage() {
-  // Real-time data via Convex subscriptions - no polling needed!
-  const {
-    pendingInvitations,
-    myJoinRequests,
-    isLoading,
-  } = useNotifications()
-
+export function useNotificationActions() {
   const [processingId, setProcessingId] = useState<string | null>(null)
+  const { data: activeOrg } = authClient.useActiveOrganization()
+  const cancelJoinRequest = useConvexMutation(api.joinRequests.cancelJoinRequest)
+  const navigate = useNavigate()
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Clock className="h-4 w-4 text-yellow-500" />
-      case 'accepted':
-      case 'approved':
-        return <CheckCircle className="h-4 w-4 text-green-500" />
-      case 'rejected':
-        return <XCircle className="h-4 w-4 text-destructive" />
-      default:
-        return null
-    }
-  }
-
-  const handleAccept = async (invitationId: string) => {
+  const acceptInvitation = async (invitationId: string, orgId: string) => {
     try {
       setProcessingId(invitationId)
       await authClient.organization.acceptInvitation({ invitationId })
-      // No need to manually update - Convex auto-updates!
-    } catch (err) {
-      console.error('Failed to accept:', err)
+      
+      // Auto switch if no active org
+      if (!activeOrg) {
+        await authClient.organization.setActive({ organizationId: orgId })
+        navigate({ to: '/app' })
+      }
     } finally {
       setProcessingId(null)
     }
   }
 
-  const handleDecline = async (invitationId: string) => {
-    try {
-      setProcessingId(invitationId)
-      await authClient.organization.rejectInvitation({ invitationId })
-      // No need to manually update - Convex auto-updates!
-    } catch (err) {
-      console.error('Failed to decline:', err)
-    } finally {
-      setProcessingId(null)
-    }
-  }
+  const declineInvitation = async (invitationId: string) => { /* logic */ }
+  const handleCancelRequest = async (requestId: string) => { /* logic */ }
+  const switchToOrg = async (orgId: string) => { /* setActive & nav */ }
 
-  return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Invitations & Requests</h1>
-        <p className="text-muted-foreground">
-          Manage your organization invitations and join requests
-        </p>
-      </div>
-
-      <Tabs defaultValue="invitations">
-        <TabsList>
-          <TabsTrigger value="invitations">
-            Invitations
-            {pendingInvitations.length > 0 && (
-              <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
-                {pendingInvitations.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="requests">My Join Requests</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="invitations" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Organization Invitations</CardTitle>
-              <CardDescription>
-                Invitations you've received to join organizations
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-16 w-full" />
-                  <Skeleton className="h-16 w-full" />
-                </div>
-              ) : pendingInvitations.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground">
-                  No pending invitations
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {pendingInvitations.map((invitation) => (
-                    <div
-                      key={invitation.id}
-                      className="flex items-center justify-between p-4 rounded-lg border"
-                    >
-                      <div>
-                        <p className="font-medium">{invitation.organizationName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Invited by {invitation.inviterName} as {invitation.role}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(invitation.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={processingId === invitation.id}
-                          onClick={() => handleDecline(invitation.id)}
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Decline
-                        </Button>
-                        <Button
-                          size="sm"
-                          disabled={processingId === invitation.id}
-                          onClick={() => handleAccept(invitation.id)}
-                        >
-                          {processingId === invitation.id ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          ) : (
-                            <Check className="h-4 w-4 mr-1" />
-                          )}
-                          Accept
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="requests" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>My Join Requests</CardTitle>
-              <CardDescription>
-                Requests you've made to join organizations
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-16 w-full" />
-                </div>
-              ) : myJoinRequests.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground">
-                  No join requests
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {myJoinRequests.map((request) => (
-                    <div
-                      key={request.id}
-                      className="flex items-center justify-between p-4 rounded-lg border"
-                    >
-                      <div className="flex items-center gap-3">
-                        {getStatusIcon(request.status)}
-                        <div>
-                          <p className="font-medium">{request.organizationName}</p>
-                          <p className="text-sm text-muted-foreground capitalize">
-                            Status: {request.status}
-                          </p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(request.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
+  return { processingId, acceptInvitation, declineInvitation, handleCancelRequest, switchToOrg }
 }
 ```
 
-**Key Changes from Original**:
-- Uses `useNotifications()` hook instead of `useNotificationStore()`
-- No manual state updates after accept/decline - Convex auto-updates
-- Added loading states on buttons
-- Better error handling
+2. Replace the old Invitations page structure by creating `src/routes/_authed/app/notifications.tsx`:
+```typescript
+import { createFileRoute } from '@tanstack/react-router'
+import { useNotifications } from '@/hooks/useNotifications'
+import { useNotificationActions } from '@/hooks/useNotificationActions'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+// ...
+
+export const Route = createFileRoute('/_authed/app/notifications')({
+  component: NotificationsPage,
+})
+
+function NotificationsPage() {
+  const { pendingInvitations, myJoinRequests, isLoading } = useNotifications()
+  const actions = useNotificationActions()
+
+  // Render the Tabs for "Invitations", "Join Requests", and "System Alerts (Coming Soon)"
+  // Wire up actions.acceptInvitation(inv.id, inv.organizationId) on Accept buttons
+  // Wire up actions.switchToOrg() for approved Join Requests
+  // ...
+}
+```
 
 **Acceptance Criteria**:
-- [ ] `src/routes/_authed/app/invitations.tsx` exists
-- [ ] Two tabs: Invitations and My Join Requests
-- [ ] Pending invitations show accept/decline buttons
-- [ ] Join requests show status with icons
-- [ ] Loading and empty states handled
-- [ ] **Real-time updates** - changes appear instantly
+- [ ] `src/hooks/useNotificationActions.ts` works and is shared between the page and `NotificationCenter.tsx`.
+- [ ] Accepting an invite securely uses Better Auth APIs, making the user a member.
+- [ ] Accepting an invite automatically switches the active organization if none is active.
+- [ ] `src/routes/_authed/app/notifications.tsx` exists and renders correctly.
+- [ ] Approved join requests present a "Switch to Organization" button.
+- [ ] Placeholder section for "System Alerts/Other" is present.
+- [ ] Link inside `NotificationCenter` successfully navigates to `/app/notifications`.
 
 **Testing Instructions**:
-1. Navigate to `/app/invitations`
-2. Verify invitations tab shows pending invitations
-3. Accept/decline an invitation - verify it disappears **instantly**
-4. In another browser, create an invitation - verify it appears **instantly**
-5. Check My Join Requests tab shows request history with real-time updates
+1. Open the app, view the notification dropdown and use "View all notifications" to jump to the new page.
+2. Accept an invitation with no active organization — ensure it auto-navigates or switches properly.
+3. Test canceling a join request from the new page.
+4. Verify code is DRY (using `useNotificationActions` everywhere).
 
-**Definition of Done**: Full invitations page works with both tabs and real-time updates.
+**Definition of Done**: Notification page lives at `/app/notifications`, efficiently aggregates all real-time Convex requests via Better Auth UI actions, and unifies logic with the Nav component.
 
 ---
 

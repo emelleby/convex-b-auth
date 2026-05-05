@@ -176,6 +176,7 @@ export const tables = {
   })
     .index("organizationId", ["organizationId"])
     .index("email", ["email"])
+    .index("email_status", ["email", "status"])
     .index("organizationId_status", ["organizationId", "status"]),
 
   team: defineTable({

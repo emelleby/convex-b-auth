@@ -1,5 +1,6 @@
 import { convexQuery } from '@convex-dev/react-query'
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
+import { NotificationCenter } from '@/components/NotificationCenter'
 import { api } from '../../../convex/_generated/api'
 import { AppSidebar } from '../../components/app-sidebar'
 import ThemeToggle from '../../components/ThemeToggle'
@@ -61,7 +62,8 @@ function RouteComponent() {
 							</BreadcrumbList>
 						</Breadcrumb>
 					</div>
-					<div className="ml-auto pr-4">
+					<div className="flex items-center gap-2 ml-auto pr-4">
+						<NotificationCenter />
 						<ThemeToggle />
 					</div>
 				</header>
