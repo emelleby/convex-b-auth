@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as DemoRouteRouteImport } from './routes/demo/route'
 import { Route as PublicRouteRouteImport } from './routes/_public/route'
 import { Route as AuthedRouteRouteImport } from './routes/_authed/route'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
@@ -32,6 +33,11 @@ import { Route as AuthedAppOrganizationRouteImport } from './routes/_authed/app/
 import { Route as AuthedAppNotificationsRouteImport } from './routes/_authed/app/notifications'
 import { Route as AuthedAppInvitationsRouteImport } from './routes/_authed/app/invitations'
 
+const DemoRouteRoute = DemoRouteRouteImport.update({
+  id: '/demo',
+  path: '/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PublicRouteRoute = PublicRouteRouteImport.update({
   id: '/_public',
   getParentRoute: () => rootRouteImport,
@@ -66,9 +72,9 @@ const DemoStoreRoute = DemoStoreRouteImport.update({
   getParentRoute: () => DemoRouteRoute,
 } as any)
 const DemoOrpcTodoRoute = DemoOrpcTodoRouteImport.update({
-  id: '/demo/orpc-todo',
-  path: '/demo/orpc-todo',
-  getParentRoute: () => rootRouteImport,
+  id: '/orpc-todo',
+  path: '/orpc-todo',
+  getParentRoute: () => DemoRouteRoute,
 } as any)
 const DemoI18nRoute = DemoI18nRouteImport.update({
   id: '/i18n',
@@ -143,6 +149,7 @@ const AuthedAppInvitationsRoute = AuthedAppInvitationsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
+  '/demo': typeof DemoRouteRouteWithChildren
   '/about': typeof PublicAboutRoute
   '/login': typeof PublicLoginRoute
   '/api/$': typeof ApiSplatRoute
@@ -165,6 +172,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
+  '/demo': typeof DemoRouteRouteWithChildren
   '/about': typeof PublicAboutRoute
   '/login': typeof PublicLoginRoute
   '/api/$': typeof ApiSplatRoute
@@ -189,6 +197,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteRouteWithChildren
   '/_public': typeof PublicRouteRouteWithChildren
+  '/demo': typeof DemoRouteRouteWithChildren
   '/_public/about': typeof PublicAboutRoute
   '/_public/login': typeof PublicLoginRoute
   '/api/$': typeof ApiSplatRoute
@@ -214,6 +223,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/demo'
     | '/about'
     | '/login'
     | '/api/$'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/demo'
     | '/about'
     | '/login'
     | '/api/$'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authed'
     | '/_public'
+    | '/demo'
     | '/_public/about'
     | '/_public/login'
     | '/api/$'
@@ -284,14 +296,21 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthedRouteRoute: typeof AuthedRouteRouteWithChildren
   PublicRouteRoute: typeof PublicRouteRouteWithChildren
+  DemoRouteRoute: typeof DemoRouteRouteWithChildren
   ApiSplatRoute: typeof ApiSplatRoute
-  DemoOrpcTodoRoute: typeof DemoOrpcTodoRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_public': {
       id: '/_public'
       path: ''
@@ -343,10 +362,10 @@ declare module '@tanstack/react-router' {
     }
     '/demo/orpc-todo': {
       id: '/demo/orpc-todo'
-      path: '/demo/orpc-todo'
+      path: '/orpc-todo'
       fullPath: '/demo/orpc-todo'
       preLoaderRoute: typeof DemoOrpcTodoRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof DemoRouteRoute
     }
     '/demo/i18n': {
       id: '/demo/i18n'
@@ -483,11 +502,41 @@ const PublicRouteRouteWithChildren = PublicRouteRoute._addFileChildren(
   PublicRouteRouteChildren,
 )
 
+interface DemoRouteRouteChildren {
+  DemoAuthRoute: typeof DemoAuthRoute
+  DemoConvexRoute: typeof DemoConvexRoute
+  DemoI18nRoute: typeof DemoI18nRoute
+  DemoOrpcTodoRoute: typeof DemoOrpcTodoRoute
+  DemoStoreRoute: typeof DemoStoreRoute
+  DemoStorybookRoute: typeof DemoStorybookRoute
+  DemoTableRoute: typeof DemoTableRoute
+  DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  DemoFormAddressRoute: typeof DemoFormAddressRoute
+  DemoFormSimpleRoute: typeof DemoFormSimpleRoute
+}
+
+const DemoRouteRouteChildren: DemoRouteRouteChildren = {
+  DemoAuthRoute: DemoAuthRoute,
+  DemoConvexRoute: DemoConvexRoute,
+  DemoI18nRoute: DemoI18nRoute,
+  DemoOrpcTodoRoute: DemoOrpcTodoRoute,
+  DemoStoreRoute: DemoStoreRoute,
+  DemoStorybookRoute: DemoStorybookRoute,
+  DemoTableRoute: DemoTableRoute,
+  DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  DemoFormAddressRoute: DemoFormAddressRoute,
+  DemoFormSimpleRoute: DemoFormSimpleRoute,
+}
+
+const DemoRouteRouteWithChildren = DemoRouteRoute._addFileChildren(
+  DemoRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   AuthedRouteRoute: AuthedRouteRouteWithChildren,
   PublicRouteRoute: PublicRouteRouteWithChildren,
+  DemoRouteRoute: DemoRouteRouteWithChildren,
   ApiSplatRoute: ApiSplatRoute,
-  DemoOrpcTodoRoute: DemoOrpcTodoRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
 }
