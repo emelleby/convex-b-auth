@@ -10,7 +10,11 @@ import { authComponent } from './betterAuth/auth'
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    return await authComponent.getAuthUser(ctx)
+    try {
+      return await authComponent.getAuthUser(ctx)
+    } catch {
+      return null
+    }
   },
 })
 

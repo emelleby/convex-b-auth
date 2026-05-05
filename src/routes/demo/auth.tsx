@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { Check, Plus, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -22,6 +22,7 @@ export const Route = createFileRoute("/demo/auth")({
 function AuthProtectedTodos() {
 	const session = authClient.useSession();
 	const isPending = session.isPending;
+	const navigate = useNavigate();
 
 	if (isPending) {
 		return (
@@ -48,15 +49,8 @@ function AuthProtectedTodos() {
 							<Button
 								variant="outline"
 								onClick={async () => {
-									await authClient.signOut({
-										fetchOptions: {
-											onSuccess: async () => {
-												// for now, recommend reloading on sign out as Convex client
-												// expectAuth only works on initial load
-												location.reload();
-											},
-										},
-									});
+									await authClient.signOut();
+									navigate({ to: "/login" });
 								}}
 							>
 								Sign Out

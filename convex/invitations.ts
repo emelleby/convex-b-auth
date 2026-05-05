@@ -8,7 +8,12 @@ import { components } from './_generated/api'
 export const listPendingForUser = query({
   args: {},
   handler: async (ctx) => {
-    const user = await authComponent.getAuthUser(ctx)
+    let user
+    try {
+      user = await authComponent.getAuthUser(ctx)
+    } catch {
+      return []
+    }
     if (!user) return []
 
     // Query the invitation table for pending invitations matching user's email
@@ -72,7 +77,12 @@ export const listPendingForUser = query({
 export const getPendingCount = query({
   args: {},
   handler: async (ctx) => {
-    const user = await authComponent.getAuthUser(ctx)
+    let user
+    try {
+      user = await authComponent.getAuthUser(ctx)
+    } catch {
+      return 0
+    }
     if (!user) return 0
 
     const result = await ctx.runQuery(
@@ -99,7 +109,12 @@ export const getInvitation = query({
     invitationId: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await authComponent.getAuthUser(ctx)
+    let user
+    try {
+      user = await authComponent.getAuthUser(ctx)
+    } catch {
+      return null
+    }
     if (!user) return null
 
     const invitation = await ctx.runQuery(

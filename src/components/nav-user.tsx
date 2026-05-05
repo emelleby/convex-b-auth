@@ -3,7 +3,6 @@
 import {
 	BadgeCheck,
 	Bell,
-	Building,
 	ChevronsUpDown,
 	CreditCard,
 	LogOut,
@@ -27,11 +26,12 @@ import {
 	useSidebar
 } from '@/components/ui/sidebar'
 import { authClient } from '@/lib/auth-client'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 
 export function NavUser() {
 	const { isMobile } = useSidebar()
 	const session = authClient.useSession()
+	const navigate = useNavigate()
 
 	// Get initials from user name
 	const getInitials = (name: string) => {
@@ -145,7 +145,12 @@ export function NavUser() {
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
-						<DropdownMenuItem>
+						<DropdownMenuItem
+							onClick={async () => {
+								await authClient.signOut()
+								navigate({ to: '/login' })
+							}}
+						>
 							<LogOut />
 							Log out
 						</DropdownMenuItem>

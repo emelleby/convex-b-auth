@@ -10,7 +10,7 @@ import {
 import type * as React from 'react'
 import { TeamSwitcher } from '#/components/org-switcher'
 import { NavMain } from '@/components/nav-main'
-import { NavProjects } from '@/components/nav-projects'
+// import { NavProjects } from '@/components/nav-projects'
 import { NavSecondary } from '@/components/nav-secondary'
 import { NavUser } from '@/components/nav-user'
 import { TeamSwitcherInOrg } from '@/components/TeamSwitcherInOrg'
@@ -52,32 +52,38 @@ const data = {
 		},
 		{
 			title: 'Organization',
-			url: '/organization',
-			icon: Bot
-		},
-		{
-			title: 'Documentation',
-			url: '#',
-			icon: BookOpen,
+			url: 'app/organization',
+			icon: Bot,
 			items: [
 				{
-					title: 'Introduction',
-					url: '#'
-				},
-				{
-					title: 'Get Started',
-					url: '#'
-				},
-				{
-					title: 'Tutorials',
-					url: '#'
-				},
-				{
-					title: 'Changelog',
-					url: '#'
+					title: 'Organization',
+					url: 'app/organization'
 				}
 			]
 		}
+		// {
+		// 	title: 'Documentation',
+		// 	url: '#',
+		// 	icon: BookOpen,
+		// 	items: [
+		// 		{
+		// 			title: 'Introduction',
+		// 			url: '#'
+		// 		},
+		// 		{
+		// 			title: 'Get Started',
+		// 			url: '#'
+		// 		},
+		// 		{
+		// 			title: 'Tutorials',
+		// 			url: '#'
+		// 		},
+		// 		{
+		// 			title: 'Changelog',
+		// 			url: '#'
+		// 		}
+		// 	]
+		// }
 		// {
 		// 	title: 'Settings',
 		// 	url: '#',
@@ -150,7 +156,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 				<NavSecondary items={data.navSecondary} />
 
-				<NavProjects projects={data.projects} />
+				{/* <NavProjects projects={data.projects} /> */}
 			</SidebarContent>
 			<SidebarFooter>
 				<NavUser />

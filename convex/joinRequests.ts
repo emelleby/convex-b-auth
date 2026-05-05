@@ -75,8 +75,12 @@ export const createJoinRequest = mutation({
 export const listMyJoinRequests = query({
   args: {},
   handler: async (ctx) => {
-    // Use graceful fallback (like invitations.ts) to avoid throwing during auth transitions
-    const user = await authComponent.getAuthUser(ctx)
+    let user
+    try {
+      user = await authComponent.getAuthUser(ctx)
+    } catch {
+      return []
+    }
     if (!user || !user._id) return []
     const userId = user._id as string
 
@@ -115,7 +119,12 @@ export const listPendingJoinRequests = query({
     organizationId: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await authComponent.getAuthUser(ctx)
+    let user
+    try {
+      user = await authComponent.getAuthUser(ctx)
+    } catch {
+      return []
+    }
     if (!user || !user._id) return []
     const userId = user._id as string
 
@@ -304,7 +313,12 @@ export const countPendingJoinRequests = query({
     organizationId: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await authComponent.getAuthUser(ctx)
+    let user
+    try {
+      user = await authComponent.getAuthUser(ctx)
+    } catch {
+      return 0
+    }
     if (!user || !user._id) return 0
     
     const requests = await ctx.db
