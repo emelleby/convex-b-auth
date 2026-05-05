@@ -1,19 +1,16 @@
 import { query } from './_generated/server'
 import { v } from 'convex/values'
-import { authComponent } from './auth'
+import { getOptionalAuth } from './auth_helpers'
 import { components } from './_generated/api'
 
-// We avoid requireAuth throwing for these read-only subscription queries
-// when the user is transitioning between states on the client.
+// Read queries use getOptionalAuth (returns null) rather than requireAuth
+// (throws). The _authed/route.tsx gate ensures the Convex JWT is set before
+// any of these subscriptions execute in the browser, so null is only returned
+// during SSR pre-render or edge cases — not during normal authed navigation.
 export const listPendingForUser = query({
   args: {},
   handler: async (ctx) => {
-    let user
-    try {
-      user = await authComponent.getAuthUser(ctx)
-    } catch {
-      return []
-    }
+    const user = await getOptionalAuth(ctx)
     if (!user) return []
 
     // Query the invitation table for pending invitations matching user's email
@@ -77,12 +74,7 @@ export const listPendingForUser = query({
 export const getPendingCount = query({
   args: {},
   handler: async (ctx) => {
-    let user
-    try {
-      user = await authComponent.getAuthUser(ctx)
-    } catch {
-      return 0
-    }
+    const user = await getOptionalAuth(ctx)
     if (!user) return 0
 
     const result = await ctx.runQuery(
@@ -109,12 +101,7 @@ export const getInvitation = query({
     invitationId: v.string(),
   },
   handler: async (ctx, args) => {
-    let user
-    try {
-      user = await authComponent.getAuthUser(ctx)
-    } catch {
-      return null
-    }
+    const user = await getOptionalAuth(ctx)
     if (!user) return null
 
     const invitation = await ctx.runQuery(

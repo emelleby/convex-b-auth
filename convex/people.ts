@@ -1,22 +1,17 @@
 import { mutation, query } from './_generated/server'
 import { v } from 'convex/values'
-import { authComponent } from './auth'
-import type { GenericCtx } from '@convex-dev/better-auth'
-import type { DataModel } from './_generated/dataModel'
+import { requireAuth, getOptionalAuth } from './auth_helpers'
 
-// Helper to require authentication
-async function requireAuth(ctx: GenericCtx<DataModel>) {
-  const user = await authComponent.getAuthUser(ctx)
-  if (!user) {
-    throw new Error('Authentication required')
-  }
-  return user
-}
+// Local requireAuth removed — use the canonical version from auth_helpers.ts
+// to ensure consistent error messages and a single point of maintenance (P4).
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    await requireAuth(ctx)
+    // READ QUERY — getOptionalAuth returns null instead of throwing, which is
+    // safe for reactive subscriptions. See auth_helpers.ts for the convention.
+    const user = await getOptionalAuth(ctx)
+    if (!user) return []
     return await ctx.db
       .query('people')
       .withIndex('by_creation_time')

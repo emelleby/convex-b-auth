@@ -1,12 +1,17 @@
 import { mutation, query } from './_generated/server'
 import { v } from 'convex/values'
-import { requireAuth } from './auth_helpers'
+import { requireAuth, getOptionalAuth } from './auth_helpers'
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    // Require authentication to view todos
-    await requireAuth(ctx)
+    // READ QUERY — use getOptionalAuth (returns null) not requireAuth (throws).
+    // Throwing from a Convex subscription propagates to the React error boundary
+    // during auth transitions, which is worse UX than returning an empty list.
+    // The _authed/route.tsx gate ensures this only returns [] in edge cases
+    // (SSR pre-render, token refresh gaps), not during normal authed use.
+    const user = await getOptionalAuth(ctx)
+    if (!user) return []
 
     return await ctx.db
       .query('todos')

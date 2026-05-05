@@ -1,7 +1,6 @@
 import { mutation, query } from './_generated/server'
 import { v } from 'convex/values'
-import { requireAuth } from './auth_helpers'
-import { authComponent } from './auth'
+import { requireAuth, getOptionalAuth } from './auth_helpers'
 import { components } from './_generated/api'
 
 // Generate a unique ID for joinRequest (which stores a custom id field)
@@ -75,12 +74,7 @@ export const createJoinRequest = mutation({
 export const listMyJoinRequests = query({
   args: {},
   handler: async (ctx) => {
-    let user
-    try {
-      user = await authComponent.getAuthUser(ctx)
-    } catch {
-      return []
-    }
+    const user = await getOptionalAuth(ctx)
     if (!user || !user._id) return []
     const userId = user._id as string
 
@@ -113,18 +107,16 @@ export const listMyJoinRequests = query({
 /**
  * List pending join requests for an organization.
  * Only org admins/owners can view this.
+ *
+ * Auth pattern: not authenticated → return [] (graceful, subscription safety).
+ *               authenticated but wrong role → throw (authorization error).
  */
 export const listPendingJoinRequests = query({
   args: {
     organizationId: v.string(),
   },
   handler: async (ctx, args) => {
-    let user
-    try {
-      user = await authComponent.getAuthUser(ctx)
-    } catch {
-      return []
-    }
+    const user = await getOptionalAuth(ctx)
     if (!user || !user._id) return []
     const userId = user._id as string
 
@@ -313,12 +305,7 @@ export const countPendingJoinRequests = query({
     organizationId: v.string(),
   },
   handler: async (ctx, args) => {
-    let user
-    try {
-      user = await authComponent.getAuthUser(ctx)
-    } catch {
-      return 0
-    }
+    const user = await getOptionalAuth(ctx)
     if (!user || !user._id) return 0
     
     const requests = await ctx.db
