@@ -12,3 +12,4 @@ dist-ssr
 __unconfig*
 todos.json
 graphify-out/cache
+src/routeTree.gen.ts
