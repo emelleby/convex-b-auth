@@ -41,8 +41,8 @@ const data = {
 					url: '/'
 				},
 				{
-					title: 'Starred',
-					url: '#'
+					title: 'Dashboard',
+					url: '/app'
 				},
 				{
 					title: 'Settings',
@@ -52,12 +52,12 @@ const data = {
 		},
 		{
 			title: 'Organization',
-			url: 'app/organization',
+			url: '/app',
 			icon: Bot,
 			items: [
 				{
 					title: 'Organization',
-					url: 'app/organization'
+					url: '/app/organization'
 				}
 			]
 		}

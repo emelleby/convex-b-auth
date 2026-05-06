@@ -55,6 +55,40 @@ vi.mock('sonner', () => ({
 	}
 }))
 
+vi.mock('@/lib/auth-client', () => {
+	return {
+		authClient: {
+			useActiveOrganization: () => ({
+				data: { id: 'org-1', name: 'Test Org' }
+			}),
+			organization: {
+				inviteMember: vi.fn().mockResolvedValue(undefined),
+				listTeams: vi.fn().mockResolvedValue({
+					data: [
+						{ id: 'team-1', name: 'Engineering' },
+						{ id: 'team-2', name: 'Design' }
+					]
+				})
+			}
+		}
+	}
+})
+
+vi.mock('@tanstack/react-query', async () => {
+	const actual = await vi.importActual('@tanstack/react-query')
+	return {
+		...actual,
+		useQuery: () => ({
+			data: {
+				data: [
+					{ id: 'team-1', name: 'Engineering' },
+					{ id: 'team-2', name: 'Design' }
+				]
+			}
+		})
+	}
+})
+
 vi.mock('@/components/ui/dialog', async () => {
 	const React = await import('react')
 	type DialogContextValue = {

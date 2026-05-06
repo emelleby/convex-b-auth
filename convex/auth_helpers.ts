@@ -1,6 +1,7 @@
 import { authComponent } from './auth'
 import type { GenericCtx } from '@convex-dev/better-auth'
 import type { DataModel } from './_generated/dataModel'
+import { ConvexError } from 'convex/values'
 
 /**
  * FOR MUTATIONS — write operations where unauthenticated access is exceptional.
@@ -36,9 +37,39 @@ export async function requireAuth(ctx: GenericCtx<DataModel>) {
  *   const user = await getOptionalAuth(ctx)
  *   if (!user) return []   // or return null / return 0
  */
+/**
+ * Returns true when the error is `ConvexError: Unauthenticated`, which
+ * `getAuthUser` throws (not returns null) when the Convex JWT is absent
+ * or expired. This is expected behaviour during:
+ *   - Tab wake-up after inactivity: the Convex WebSocket reconnects and
+ *     the runtime re-runs server-side query subscriptions before
+ *     ConvexBetterAuthProvider has completed its JWT refresh.
+ *   - Brief token-refresh races on reconnect.
+ *
+ * Any other error type (schema bug, adapter misconfiguration, network
+ * partition) is NOT matched and will propagate to the caller.
+ */
+function isUnauthenticatedError(err: unknown): boolean {
+  if (!(err instanceof ConvexError)) return false
+  const data = err.data
+  const msg =
+    typeof data === 'string'
+      ? data
+      : ((data as { message?: string } | null)?.message ?? '')
+  return msg.toLowerCase().includes('unauthenticated')
+}
+
 export async function getOptionalAuth(ctx: GenericCtx<DataModel>) {
-  // Does NOT throw — returns null when unauthenticated.
-  // Let real infrastructure errors (network, misconfiguration) propagate
-  // naturally instead of being swallowed by a try-catch.
-  return authComponent.getAuthUser(ctx)
+  try {
+    return await authComponent.getAuthUser(ctx)
+  } catch (err) {
+    // getAuthUser throws ConvexError: Unauthenticated — it does NOT return
+    // null. Catching it here returns null instead so reactive subscriptions
+    // degrade gracefully (return [], 0, null) during the JWT refresh window
+    // rather than crashing into the error boundary with a spurious redirect.
+    //
+    // All other errors are re-thrown so real problems remain visible.
+    if (isUnauthenticatedError(err)) return null
+    throw err
+  }
 }

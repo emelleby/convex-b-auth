@@ -177,7 +177,8 @@ export const tables = {
     .index("organizationId", ["organizationId"])
     .index("email", ["email"])
     .index("email_status", ["email", "status"])
-    .index("organizationId_status", ["organizationId", "status"]),
+    .index("organizationId_status", ["organizationId", "status"])
+    .index("email_organizationId_status", ["email", "organizationId", "status"]),
 
   team: defineTable({
     name: v.string(),

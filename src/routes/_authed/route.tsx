@@ -151,12 +151,42 @@ export const Route = createFileRoute('/_authed')({
  * rendered outside this layout in the future.
  */
 function RouteComponent() {
-	const { isLoading: isConvexTokenLoading } = useConvexAuth()
+	const {
+		isLoading: isConvexTokenLoading,
+		isAuthenticated: isConvexAuthenticated
+	} = useConvexAuth()
+	const navigate = useNavigate()
 
-	// Block the entire authed layout until the Convex JWT is confirmed.
-	// The spinner is only visible during client-side post-login navigation
-	// (typically < 200 ms). SSR pages skip this entirely.
-	if (isConvexTokenLoading) {
+	// ── Truly expired session handler ──────────────────────────────────────
+	// When both of these are true simultaneously:
+	//   isLoading === false  → ConvexBetterAuthProvider is NOT mid-refresh
+	//   isAuthenticated === false  → the JWT is gone and won't be coming back
+	//     (the Better Auth session cookie has also expired)
+	// …then there is nothing left to wait for: redirect to login.
+	//
+	// This is distinct from the JWT refresh window (isLoading === true), where
+	// we just show a spinner because a new token is on its way.
+	//
+	// Why useEffect: navigate() is imperative and must not be called during
+	// render. useEffect fires after the fallback UI mounts, then the navigation
+	// runs cleanly with full router context and replace:true so the broken
+	// authed URL is not left in the browser history.
+	useEffect(() => {
+		if (!isConvexTokenLoading && !isConvexAuthenticated) {
+			void navigate({ to: '/login', replace: true })
+		}
+	}, [isConvexTokenLoading, isConvexAuthenticated, navigate])
+
+	// ── JWT refresh spinner ────────────────────────────────────────────────
+	// Shown during two scenarios:
+	//   1. Client-side post-login navigation (~100–200 ms, the original gate).
+	//   2. Tab wake-up after inactivity: ConvexBetterAuthProvider is fetching
+	//      a fresh JWT. The spinner holds until the token is confirmed so that
+	//      no child component subscribes to a Convex query with a stale token.
+	//
+	// Also shown while navigate() is in-flight for the expired-session case
+	// above (!isAuthenticated), giving a clean visual transition.
+	if (isConvexTokenLoading || !isConvexAuthenticated) {
 		return (
 			<div className="flex h-screen w-full items-center justify-center">
 				<div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />

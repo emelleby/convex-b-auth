@@ -54,7 +54,7 @@ export const listPendingForUser = query({
         }
 
         return {
-          id: inv.id,
+          id: inv._id,
           email: inv.email,
           role: inv.role,
           status: inv.status,
