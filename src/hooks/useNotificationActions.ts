@@ -7,7 +7,6 @@ import { api } from '../../convex/_generated/api'
 
 export function useNotificationActions() {
 	const [processingId, setProcessingId] = useState<string | null>(null)
-	const { data: activeOrg } = authClient.useActiveOrganization()
 	const cancelJoinRequest = useMutation(api.joinRequests.cancelJoinRequest)
 	const approveJoinRequestMut = useMutation(api.joinRequests.approveJoinRequest)
 	const rejectJoinRequestMut = useMutation(api.joinRequests.rejectJoinRequest)
@@ -21,13 +20,9 @@ export function useNotificationActions() {
 		try {
 			setProcessingId(invitationId)
 			await authClient.organization.acceptInvitation({ invitationId })
-
-			// Auto switch if no active org
-			if (!activeOrg?.id) {
-				await authClient.organization.setActive({ organizationId: orgId })
-				if (shouldNavigate) {
-					navigate({ to: '/app' })
-				}
+			await authClient.organization.setActive({ organizationId: orgId })
+			if (shouldNavigate) {
+				navigate({ to: '/app' })
 			}
 		} finally {
 			setProcessingId(null)

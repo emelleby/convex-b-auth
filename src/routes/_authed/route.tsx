@@ -11,6 +11,7 @@ import { ConvexError } from 'convex/values'
 import { useEffect } from 'react'
 import { DefaultCatchBoundary } from '@/components/DefaultCatchBoundary'
 import { NotificationCenter } from '@/components/NotificationCenter'
+import { authClient } from '@/lib/auth-client'
 import { api } from '../../../convex/_generated/api'
 import { AppSidebar } from '../../components/app-sidebar'
 import ThemeToggle from '../../components/ThemeToggle'
@@ -155,38 +156,19 @@ function RouteComponent() {
 		isLoading: isConvexTokenLoading,
 		isAuthenticated: isConvexAuthenticated
 	} = useConvexAuth()
+	const {
+		data: session,
+		isPending: isSessionPending
+	} = authClient.useSession()
 	const navigate = useNavigate()
 
-	// ── Truly expired session handler ──────────────────────────────────────
-	// When both of these are true simultaneously:
-	//   isLoading === false  → ConvexBetterAuthProvider is NOT mid-refresh
-	//   isAuthenticated === false  → the JWT is gone and won't be coming back
-	//     (the Better Auth session cookie has also expired)
-	// …then there is nothing left to wait for: redirect to login.
-	//
-	// This is distinct from the JWT refresh window (isLoading === true), where
-	// we just show a spinner because a new token is on its way.
-	//
-	// Why useEffect: navigate() is imperative and must not be called during
-	// render. useEffect fires after the fallback UI mounts, then the navigation
-	// runs cleanly with full router context and replace:true so the broken
-	// authed URL is not left in the browser history.
 	useEffect(() => {
 		if (!isConvexTokenLoading && !isConvexAuthenticated) {
 			void navigate({ to: '/login', replace: true })
 		}
 	}, [isConvexTokenLoading, isConvexAuthenticated, navigate])
 
-	// ── JWT refresh spinner ────────────────────────────────────────────────
-	// Shown during two scenarios:
-	//   1. Client-side post-login navigation (~100–200 ms, the original gate).
-	//   2. Tab wake-up after inactivity: ConvexBetterAuthProvider is fetching
-	//      a fresh JWT. The spinner holds until the token is confirmed so that
-	//      no child component subscribes to a Convex query with a stale token.
-	//
-	// Also shown while navigate() is in-flight for the expired-session case
-	// above (!isAuthenticated), giving a clean visual transition.
-	if (isConvexTokenLoading || !isConvexAuthenticated) {
+	if (isConvexTokenLoading || !isConvexAuthenticated || isSessionPending || !session?.user) {
 		return (
 			<div className="flex h-screen w-full items-center justify-center">
 				<div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
@@ -196,7 +178,7 @@ function RouteComponent() {
 
 	return (
 		<SidebarProvider>
-			<AppSidebar />
+			<AppSidebar key={session.user.id} />
 			<SidebarInset>
 				<header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 shadow-sm">
 					<div className="flex items-center gap-2 px-4">
