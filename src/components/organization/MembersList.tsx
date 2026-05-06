@@ -1,3 +1,4 @@
+import { convexQuery } from '@convex-dev/react-query'
 import type { RankingInfo } from '@tanstack/match-sorter-utils'
 import { compareItems, rankItem } from '@tanstack/match-sorter-utils'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -20,11 +21,11 @@ import {
 	ArrowDown,
 	ArrowUp,
 	ArrowUpDown,
-	ChevronDown,
-	Search,
-	Trash2
+	MoreHorizontal,
+	Search
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
 	Dialog,
@@ -38,10 +39,20 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import {
 	Table,
 	TableBody,
@@ -51,6 +62,7 @@ import {
 	TableRow
 } from '@/components/ui/table'
 import { authClient } from '@/lib/auth-client'
+import { api } from '../../../convex/_generated/api'
 import InviteMemberDialog from './InviteMemberDialog'
 
 declare module '@tanstack/react-table' {
@@ -150,7 +162,12 @@ export default function MembersList() {
 	const { data: activeOrg } = authClient.useActiveOrganization()
 	const queryClient = useQueryClient()
 	const [removingMemberId, setRemovingMemberId] = useState<string | null>(null)
+	const [managingTeamsMember, setManagingTeamsMember] = useState<Member | null>(
+		null
+	)
+	const [togglingTeamId, setTogglingTeamId] = useState<string | null>(null)
 	const [globalFilter, setGlobalFilter] = useState('')
+	const [selectedTeamId, setSelectedTeamId] = useState('all')
 	const [sorting, setSorting] = useState<SortingState>([])
 
 	const {
@@ -166,6 +183,28 @@ export default function MembersList() {
 		enabled: !!activeOrg?.id
 	})
 
+	const { data: teamMembershipsMap } = useQuery({
+		...convexQuery(api.dashboard.getOrgMembersTeamMemberships, {
+			organizationId: activeOrg?.id ?? ''
+		}),
+		enabled: !!activeOrg?.id
+	})
+
+	const { data: teamsResponse } = useQuery({
+		queryKey: ['organization-teams', activeOrg?.id],
+		queryFn: async () => {
+			const res = await authClient.organization.listTeams({
+				query: { organizationId: activeOrg?.id }
+			})
+			return res
+		},
+		enabled: !!activeOrg?.id
+	})
+
+	const allTeams: Array<{ id: string; name: string }> =
+		(teamsResponse?.data as Array<{ id: string; name: string }> | undefined) ??
+		[]
+
 	const removeMutation = useMutation({
 		mutationFn: (memberIdOrEmail: string) =>
 			authClient.organization.removeMember({ memberIdOrEmail }),
@@ -175,6 +214,18 @@ export default function MembersList() {
 			})
 			setRemovingMemberId(null)
 		}
+	})
+
+	const addToTeamMutation = useMutation({
+		mutationFn: ({ teamId, userId }: { teamId: string; userId: string }) =>
+			authClient.organization.addTeamMember({ teamId, userId }),
+		onSettled: () => setTogglingTeamId(null)
+	})
+
+	const removeFromTeamMutation = useMutation({
+		mutationFn: ({ teamId, userId }: { teamId: string; userId: string }) =>
+			authClient.organization.removeTeamMember({ teamId, userId }),
+		onSettled: () => setTogglingTeamId(null)
 	})
 
 	const changeRoleMutation = useMutation({
@@ -194,6 +245,23 @@ export default function MembersList() {
 
 	const members: Member[] =
 		(membersData?.data?.members as Member[] | undefined) ?? []
+
+	// useMemo is required here. Without it, .filter() produces a new array
+	// reference on every render, which invalidates TanStack Table's internal
+	// row-model cache (keyed on the data reference) every render. Combined with
+	// columns also being unstable, this created a render → rebuild → render loop
+	// that froze the browser.
+	const filteredMembers = useMemo(
+		() =>
+			selectedTeamId !== 'all'
+				? members.filter((m) =>
+						(teamMembershipsMap?.[m.userId] ?? []).some(
+							(t) => t.id === selectedTeamId
+						)
+					)
+				: members,
+		[members, selectedTeamId, teamMembershipsMap]
+	)
 
 	const currentUserMember = members.find((m) => m.userId === session?.user?.id)
 	const isAdmin =
@@ -244,6 +312,27 @@ export default function MembersList() {
 				)
 			},
 			{
+				id: 'teams',
+				enableSorting: false,
+				enableGlobalFilter: false,
+				header: () => 'Teams',
+				cell: ({ row }) => {
+					const memberTeams = teamMembershipsMap?.[row.original.userId] ?? []
+					if (memberTeams.length === 0) {
+						return <span className="text-muted-foreground">—</span>
+					}
+					return (
+						<div className="flex flex-wrap gap-1">
+							{memberTeams.map((t) => (
+								<Badge key={t.id} variant="secondary" className="text-xs">
+									{t.name}
+								</Badge>
+							))}
+						</div>
+					)
+				}
+			},
+			{
 				id: 'actions',
 				enableSorting: false,
 				enableGlobalFilter: false,
@@ -258,15 +347,27 @@ export default function MembersList() {
 						return null
 					}
 					return (
-						<div className="flex justify-end gap-2">
+						<div className="flex justify-end">
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<Button variant="outline" size="sm">
-										Change Role <ChevronDown className="h-3 w-3 ml-1" />
+									<Button variant="ghost" className="h-8 w-8 p-0">
+										<span className="sr-only">Open menu</span>
+										<MoreHorizontal className="h-4 w-4" />
 									</Button>
 								</DropdownMenuTrigger>
-								<DropdownMenuContent>
+								<DropdownMenuContent align="end">
+									<DropdownMenuLabel>Actions</DropdownMenuLabel>
 									<DropdownMenuItem
+										onClick={() => setManagingTeamsMember(member)}
+									>
+										Manage Teams
+									</DropdownMenuItem>
+									<DropdownMenuSeparator />
+									<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+										Change Role
+									</DropdownMenuLabel>
+									<DropdownMenuItem
+										disabled={member.role === 'admin'}
 										onClick={() =>
 											changeRoleMutation.mutate({
 												memberId: member.id,
@@ -274,9 +375,10 @@ export default function MembersList() {
 											})
 										}
 									>
-										Admin
+										Make Admin
 									</DropdownMenuItem>
 									<DropdownMenuItem
+										disabled={member.role === 'member'}
 										onClick={() =>
 											changeRoleMutation.mutate({
 												memberId: member.id,
@@ -284,27 +386,31 @@ export default function MembersList() {
 											})
 										}
 									>
-										Member
+										Make Member
+									</DropdownMenuItem>
+									<DropdownMenuSeparator />
+									<DropdownMenuItem
+										className="text-destructive"
+										onClick={() => setRemovingMemberId(member.id)}
+									>
+										Remove from organization
 									</DropdownMenuItem>
 								</DropdownMenuContent>
 							</DropdownMenu>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => setRemovingMemberId(member.id)}
-							>
-								<Trash2 className="h-4 w-4 text-destructive" />
-							</Button>
 						</div>
 					)
 				}
 			}
 		],
-		[session?.user?.id, isAdmin, changeRoleMutation]
+		// changeRoleMutation.mutate is stable (useCallback in React Query v5).
+		// Listing the whole changeRoleMutation object would cause columns to
+		// rebuild every render because useMutation returns a new object reference
+		// on each render, which was the second half of the render-loop freeze.
+		[session?.user?.id, isAdmin, changeRoleMutation.mutate, teamMembershipsMap]
 	)
 
 	const table = useReactTable({
-		data: members,
+		data: filteredMembers,
 		columns,
 		filterFns: { fuzzy: fuzzyFilter },
 		state: { globalFilter, sorting },
@@ -336,14 +442,31 @@ export default function MembersList() {
 			)}
 
 			<div className="flex items-center justify-between gap-4">
-				<div className="relative flex-1 max-w-sm">
-					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-					<DebouncedInput
-						value={globalFilter}
-						onChange={setGlobalFilter}
-						placeholder="Search members..."
-						className="pl-9"
-					/>
+				<div className="flex items-center gap-2 flex-1">
+					<div className="relative flex-1 max-w-sm">
+						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+						<DebouncedInput
+							value={globalFilter}
+							onChange={setGlobalFilter}
+							placeholder="Search members..."
+							className="pl-9"
+						/>
+					</div>
+					{allTeams.length > 0 && (
+						<Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
+							<SelectTrigger className="w-44">
+								<SelectValue placeholder="All teams" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">All teams</SelectItem>
+								{allTeams.map((team) => (
+									<SelectItem key={team.id} value={team.id}>
+										{team.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					)}
 				</div>
 				{isAdmin && (
 					<InviteMemberDialog
@@ -396,7 +519,9 @@ export default function MembersList() {
 								>
 									{members.length === 0
 										? 'No members in this organization yet.'
-										: 'No members match your search.'}
+										: selectedTeamId !== 'all'
+											? 'No members in this team.'
+											: 'No members match your search.'}
 								</TableCell>
 							</TableRow>
 						)}
@@ -404,6 +529,81 @@ export default function MembersList() {
 				</Table>
 			</div>
 
+			{/* Manage Teams dialog */}
+			<Dialog
+				open={!!managingTeamsMember}
+				onOpenChange={(open) => {
+					if (!open) setManagingTeamsMember(null)
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Manage Teams</DialogTitle>
+						<DialogDescription>
+							Toggle team membership for{' '}
+							<span className="font-medium">
+								{managingTeamsMember?.user.name}
+							</span>
+							.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="py-2">
+						{allTeams.length === 0 ? (
+							<p className="text-sm text-muted-foreground text-center py-4">
+								No teams in this organization yet.
+							</p>
+						) : (
+							<ul className="space-y-1">
+								{allTeams.map((team) => {
+									const memberTeams =
+										teamMembershipsMap?.[managingTeamsMember?.userId ?? ''] ??
+										[]
+									const isMember = memberTeams.some((t) => t.id === team.id)
+									const isToggling = togglingTeamId === team.id
+									return (
+										<li
+											key={team.id}
+											className="flex items-center justify-between rounded-md px-3 py-2 hover:bg-muted/50"
+										>
+											<span className="text-sm font-medium">{team.name}</span>
+											<Switch
+												checked={isMember}
+												disabled={isToggling}
+												onCheckedChange={(checked) => {
+													const userId = managingTeamsMember?.userId
+													if (!userId) return
+													setTogglingTeamId(team.id)
+													if (checked) {
+														addToTeamMutation.mutate({
+															teamId: team.id,
+															userId
+														})
+													} else {
+														removeFromTeamMutation.mutate({
+															teamId: team.id,
+															userId
+														})
+													}
+												}}
+											/>
+										</li>
+									)
+								})}
+							</ul>
+						)}
+					</div>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setManagingTeamsMember(null)}
+						>
+							Done
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Remove from organization confirmation dialog */}
 			<Dialog
 				open={!!removingMemberId}
 				onOpenChange={() => setRemovingMemberId(null)}
