@@ -6,13 +6,28 @@ import { m } from "@/paraglide/messages";
 import { getLocale, locales, setLocale } from "@/paraglide/runtime";
 import { type Language, LanguageSwitcher } from "./LanguageSwitcher";
 
-export default function ParaglideLocaleSwitcher() {
+export default function ParaglideLocaleSwitcher({ iconOnly = false }: { iconOnly?: boolean } = {}) {
 	const currentLocale = getLocale();
 
 	const languages: Language[] = locales.map((locale) => ({
 		code: locale,
 		label: locale.toUpperCase(),
 	}));
+
+	if (iconOnly) {
+		return (
+			<LanguageSwitcher
+				languages={languages}
+				value={currentLocale}
+				onChange={(code) => setLocale(code as typeof currentLocale)}
+				variant="ghost"
+				align="end"
+				showIcon={true}
+				size="icon"
+				className="size-9"
+			/>
+		);
+	}
 
 	return (
 		<div
@@ -22,7 +37,6 @@ export default function ParaglideLocaleSwitcher() {
 				alignItems: "center",
 				color: "inherit",
 			}}
-			aria-label={m.language_label()}
 		>
 			<span style={{ opacity: 0.85 }}>
 				{m.current_locale({ locale: currentLocale })}

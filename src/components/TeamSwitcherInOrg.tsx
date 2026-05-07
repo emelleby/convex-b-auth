@@ -43,10 +43,15 @@ export function TeamSwitcherInOrg() {
 		select: (response: any) => response.data ?? []
 	})
 
-	// Set active team when data loads if not already set, or if teams array resets
+	// Set active team when data loads if not already set, or if teams array changes
 	React.useEffect(() => {
-		if (teams.length > 0 && !activeTeam) {
-			setActiveTeam(teams[0])
+		if (teams.length > 0) {
+			const teamExists = teams.some((t: Team) => t.id === activeTeam?.id)
+			if (!teamExists) {
+				setActiveTeam(teams[0])
+			}
+		} else if (teams.length === 0 && activeTeam) {
+			setActiveTeam(null)
 		}
 	}, [teams, activeTeam])
 

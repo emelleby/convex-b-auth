@@ -14,16 +14,8 @@ import { NotificationCenter } from '@/components/NotificationCenter'
 import { authClient } from '@/lib/auth-client'
 import { api } from '../../../convex/_generated/api'
 import { AppSidebar } from '../../components/app-sidebar'
+import ParaglideLocaleSwitcher from '../../components/LocaleSwitcher'
 import ThemeToggle from '../../components/ThemeToggle'
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbLink,
-	BreadcrumbList,
-	BreadcrumbPage,
-	BreadcrumbSeparator
-} from '../../components/ui/breadcrumb'
-import { Separator } from '../../components/ui/separator'
 import {
 	SidebarInset,
 	SidebarProvider,
@@ -156,10 +148,7 @@ function RouteComponent() {
 		isLoading: isConvexTokenLoading,
 		isAuthenticated: isConvexAuthenticated
 	} = useConvexAuth()
-	const {
-		data: session,
-		isPending: isSessionPending
-	} = authClient.useSession()
+	const { data: session, isPending: isSessionPending } = authClient.useSession()
 	const navigate = useNavigate()
 
 	useEffect(() => {
@@ -168,7 +157,12 @@ function RouteComponent() {
 		}
 	}, [isConvexTokenLoading, isConvexAuthenticated, navigate])
 
-	if (isConvexTokenLoading || !isConvexAuthenticated || isSessionPending || !session?.user) {
+	if (
+		isConvexTokenLoading ||
+		!isConvexAuthenticated ||
+		isSessionPending ||
+		!session?.user
+	) {
 		return (
 			<div className="flex h-screen w-full items-center justify-center">
 				<div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2" />
@@ -183,7 +177,7 @@ function RouteComponent() {
 				<header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 shadow-sm">
 					<div className="flex items-center gap-2 px-4">
 						<SidebarTrigger className="-ml-1" />
-						<Separator
+						{/* <Separator
 							orientation="vertical"
 							className="mr-2 data-[orientation=vertical]:h-4"
 						/>
@@ -199,11 +193,12 @@ function RouteComponent() {
 									<BreadcrumbPage>Data Fetching</BreadcrumbPage>
 								</BreadcrumbItem>
 							</BreadcrumbList>
-						</Breadcrumb>
+						</Breadcrumb> */}
 					</div>
 					<div className="flex items-center gap-2 ml-auto pr-4">
+						<ParaglideLocaleSwitcher iconOnly />
+						<ThemeToggle iconOnly />
 						<NotificationCenter />
-						<ThemeToggle />
 					</div>
 				</header>
 
