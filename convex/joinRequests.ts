@@ -130,7 +130,7 @@ export const listPendingJoinRequests = query({
     })) as { role: string } | null
 
     if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      throw new Error('Only organization admins can view join requests')
+      return []
     }
 
     const requests = await ctx.db

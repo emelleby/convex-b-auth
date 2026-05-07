@@ -49,9 +49,9 @@ export const cleanupExpiredSessions = internalMutation({
     const now = Date.now()
     let cursor: string | null = null
     let totalDeleted = 0
+    let isDone = false
 
-    do {
-      // Fetch a page of sessions from the Better Auth component's table.
+    while (!isDone) {
       const result = (await ctx.runQuery(
         components.betterAuth.adapter.findMany,
         {
@@ -74,8 +74,9 @@ export const cleanupExpiredSessions = internalMutation({
         totalDeleted++
       }
 
+      isDone = result.isDone ?? true
       cursor = result.continueCursor ?? null
-    } while (cursor)
+    }
 
     console.log(`[cleanupExpiredSessions] Deleted ${totalDeleted} expired sessions.`)
     return { deleted: totalDeleted }

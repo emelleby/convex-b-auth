@@ -3,7 +3,7 @@ import { createClient } from '@convex-dev/better-auth'
 import { convex } from '@convex-dev/better-auth/plugins'
 import { organization } from 'better-auth/plugins'
 import authConfig from '../auth.config'
-import { components } from '../_generated/api'
+import { components, internal } from '../_generated/api'
 import type { GenericCtx } from '@convex-dev/better-auth'
 import type { DataModel } from '../_generated/dataModel'
 import type { GenericActionCtx } from 'convex/server'
@@ -62,61 +62,11 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) => ({
         beforeDeleteOrganization: async ({ organization }) => {
           if ('runMutation' in ctx) {
             const actionCtx = ctx as unknown as GenericActionCtx<DataModel>;
-
-            // Collect ALL teams for this org using a paginated loop.
-            // Note: this app limits orgs to maximumTeams:10, so a single page
-            // is always sufficient in practice. The loop guards against that
-            // limit being raised without updating this code.
-            const allTeams: any[] = [];
-            let teamCursor: string | null = null;
-            do {
-              const teamPage = (await actionCtx.runQuery(
-                components.betterAuth.adapter.findMany,
-                {
-                  model: 'team',
-                  where: [{ field: 'organizationId', value: organization.id }],
-                  paginationOpts: { numItems: 100, cursor: teamCursor },
-                } as any,
-              )) as any;
-              allTeams.push(...(teamPage.page ?? []));
-              teamCursor = teamPage.continueCursor ?? null;
-            } while (teamCursor);
-
-            // For each team, delete ALL teamMember records using a paginated
-            // loop. A team could exceed 100 members, so a single deleteMany
-            // call is insufficient.
-            for (const team of allTeams) {
-              let memberCursor: string | null = null;
-              do {
-                const result = (await actionCtx.runMutation(
-                  components.betterAuth.adapter.deleteMany,
-                  {
-                    input: {
-                      model: 'teamMember',
-                      where: [{ field: 'teamId', value: team._id as any }],
-                    },
-                    paginationOpts: { numItems: 100, cursor: memberCursor },
-                  } as any,
-                )) as any;
-                memberCursor = result.continueCursor ?? null;
-              } while (memberCursor);
-            }
-
-            // Delete ALL teams for this org using a paginated loop.
-            let deleteCursor: string | null = null;
-            do {
-              const result = (await actionCtx.runMutation(
-                components.betterAuth.adapter.deleteMany,
-                {
-                  input: {
-                    model: 'team',
-                    where: [{ field: 'organizationId', value: organization.id as any }],
-                  },
-                  paginationOpts: { numItems: 100, cursor: deleteCursor },
-                } as any,
-              )) as any;
-              deleteCursor = result.continueCursor ?? null;
-            } while (deleteCursor);
+            await actionCtx.scheduler.runAfter(
+              0,
+              internal.orgCleanup.cleanupOrgTeams,
+              { organizationId: organization.id },
+            );
           }
         },
       },

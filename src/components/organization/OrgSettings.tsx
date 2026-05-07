@@ -85,12 +85,18 @@ export default function OrgSettings() {
 			setIsDeleting(true)
 			setError(null)
 
-			await authClient.organization.delete({
-				organizationId: activeOrg.id
+			const orgId = activeOrg.id
+			void navigate({ to: '/app' })
+
+			const result = await authClient.organization.delete({
+				organizationId: orgId
 			})
 
-			// Navigate to app home after deletion
-			navigate({ to: '/app' })
+			if (result?.error) {
+				void navigate({ to: '/app/organization' })
+				setError(result.error.message ?? 'Failed to delete organization')
+				return
+			}
 		} catch (err) {
 			setError(
 				err instanceof Error ? err.message : 'Failed to delete organization'
