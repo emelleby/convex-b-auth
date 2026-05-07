@@ -1,5 +1,6 @@
 'use client'
 
+import { Link, useNavigate } from '@tanstack/react-router'
 import {
 	BadgeCheck,
 	Bell,
@@ -8,8 +9,8 @@ import {
 	LogOut,
 	Sparkles
 } from 'lucide-react'
-
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -25,13 +26,14 @@ import {
 	SidebarMenuItem,
 	useSidebar
 } from '@/components/ui/sidebar'
+import { useNotificationCount } from '@/hooks/useNotifications'
 import { authClient } from '@/lib/auth-client'
-import { Link, useNavigate } from '@tanstack/react-router'
 
 export function NavUser() {
 	const { isMobile } = useSidebar()
 	const session = authClient.useSession()
 	const navigate = useNavigate()
+	const { count: unreadCount } = useNotificationCount()
 
 	// Get initials from user name
 	const getInitials = (name: string) => {
@@ -138,9 +140,20 @@ export function NavUser() {
 								Billing
 							</DropdownMenuItem>
 							<DropdownMenuItem asChild>
-								<Link to="/app/notifications" className="flex items-center w-full cursor-pointer">
+								<Link
+									to="/app/notifications"
+									className="flex items-center w-full cursor-pointer"
+								>
 									<Bell />
 									Notifications
+									{unreadCount > 0 && (
+										<Badge
+											variant="destructive"
+											className="ml-auto h-5 min-w-5 justify-center px-1.5 text-[10px]"
+										>
+											{unreadCount > 99 ? '99+' : unreadCount}
+										</Badge>
+									)}
 								</Link>
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
