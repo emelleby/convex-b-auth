@@ -14,3 +14,4 @@ todos.json
 graphify-out/cache
 src/routeTree.gen.ts
 .venv
+convex/_generated/api.d.ts

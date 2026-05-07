@@ -2,8 +2,9 @@
 
 **Project**: Convex + Better-Auth Organization Plugin Implementation
 **Created**: 2026-03-17
-**Total Estimated Time**: ~80-100 hours
-**Phases**: 6
+**Last updated**: 2026-05-07
+**Total Estimated Time**: ~100-130 hours
+**Phases**: 8
 
 ---
 
@@ -37,15 +38,28 @@
 ### Phase 5: Invitation System - In-App Notifications (~12-16 hours)
 - ✅ Task 5.1: Create Convex Invitation Queries - **COMPLETE**
 - ✅ Task 5.2: Create useNotifications Hook - **COMPLETE**
-- ✅ Task 5.3: Create Notification Center Component - **COMPLETE**
+- ✅ Task 5.3: Create Notification Center Component - **COMPLETE** (dropdown bell with badge, accept/decline, join request links — `src/components/NotificationCenter.tsx`)
 - ✅ Task 5.4: Create Full Notifications Page - **COMPLETE**
-- ✅ Task 5.5: Update Nav User with Notification Center - **COMPLETE**
+- ⏳ Task 5.5: Update Nav User with Notification Center - **PENDING** (integrate NotificationCenter `<Bell>` badge next to user avatar in sidebar; currently just a plain link to `/app/notifications`)
 
-### Phase 6: Join Request System (~10-14 hours)
-- ⏳ Task 6.1: Extend Join Request API with Organization Discovery - **PENDING**
-- ⏳ Task 6.2: Create Browse Organizations Page - **PENDING**
-- ⏳ Task 6.3: Create Join Request Dialog - **PENDING**
-- ⏳ Task 6.4: Create Join Requests Admin Component - **PENDING**
+### Phase 6: Organization Discovery & Join Request System (~14-18 hours)
+- ⏳ Task 6.1: Organization Search API with Privacy Filters - **PENDING**
+- ⏳ Task 6.2: Browse Organizations Page - **PENDING**
+- ⏳ Task 6.3: Join Request Dialog - **PENDING**
+- ⏳ Task 6.4: Join Requests Admin in Org Settings - **PENDING**
+- ⏳ Task 6.5: Join Request Lifecycle Enhancements - **PENDING**
+
+### Phase 7: Subscription-Gated Organization Creation (~8-12 hours)
+- ⏳ Task 7.1: Subscription Schema & Backend - **PENDING**
+- ⏳ Task 7.2: Subscription Check Helpers - **PENDING**
+- ⏳ Task 7.3: Gate CreateOrganizationDialog - **PENDING**
+- ⏳ Task 7.4: Payment Gateway Placeholder - **PENDING**
+
+### Phase 8: Enhanced RBAC & Permissions (~10-14 hours)
+- ⏳ Task 8.1: Permission Model & Backend Helpers - **PENDING**
+- ⏳ Task 8.2: useOrgRole Hook & Conditional UI - **PENDING**
+- ⏳ Task 8.3: Invitation Token System - **PENDING**
+- ⏳ Task 8.4: Refactor Existing Role Checks - **PENDING**
 
 ---
 
@@ -56,9 +70,9 @@
 3. [Phase 3: Organization Management UI](#phase-3-organization-management-ui)
 4. [Phase 4: Team Management UI](#phase-4-team-management-ui)
 5. [Phase 5: Invitation System](#phase-5-invitation-system---in-app-notifications)
-6. [Phase 6: Join Request System](#phase-6-join-request-system)
-
----
+6. [Phase 6: Organization Discovery & Join Request System](#phase-6-organization-discovery--join-request-system)
+7. [Phase 7: Subscription-Gated Organization Creation](#phase-7-subscription-gated-organization-creation)
+8. [Phase 8: Enhanced RBAC & Permissions](#phase-8-enhanced-rbac--permissions)
 
 ## Reference Documentation
 
@@ -134,6 +148,8 @@ Use consistent query keys for cache management:
 | User Invitations | `['user-invitations', userId]` |
 | Join Requests (Admin) | `['join-requests', organizationId]` |
 | My Join Requests | `['my-join-requests', userId]` |
+| Public Organizations | `['public-organizations', query]` |
+| User Subscription | `['user-subscription', userId]` |
 
 ### When to Use Convex useQuery Instead
 
@@ -3763,46 +3779,62 @@ import { NotificationCenter } from '@/components/NotificationCenter'
 
 ## Phase 6: Join Request System
 
-### Task 6.1: Extend Join Request API with Organization Discovery
+### Task 6.1: Organization Search API with Privacy Filters
 
-**Complexity**: Medium (2-3 hours)
+**Complexity**: Medium (3-4 hours)
 
 **Dependencies**: Task 1.4, 1.5, 1.6 complete
 
 **Context**:
-For users to request joining organizations, they need a way to discover organizations that accept join requests. This task extends the join request API with discovery functionality.
+For users to request joining organizations, they need a way to discover organizations that accept join requests. This task creates a dedicated discovery module with proper search indexing and privacy filtering.
 
 **Requirements**:
-- **File to modify**: `convex/joinRequests.ts`
-- Add query to search/list public organizations
-- Add organization visibility/discoverability settings support
+- **File to create**: `convex/orgDiscovery.ts` (new dedicated module)
+- **File to modify**: `convex/schema.ts` (add search index if using mirrored table)
+- Convex search index on organization name/slug for full-text search
+- Privacy filter: only show orgs whose metadata marks them as discoverable
+- Exclude orgs the user is already a member of
+- Return only public-safe fields (no internal IDs, no member list)
+
+**Search Index Strategy**:
+- **Option A (preferred)**: Add a Convex search index directly on the `organization` table via `.searchIndex('search_name', ['name'])`. Use `ctx.db.query('organization').withSearchIndex('search_name', q => q.search('name', query))`.
+- **Option B (fallback)**: If the Better-Auth component schema doesn't support custom search indexes, create a mirrored `orgSearchMeta` table kept in sync via the `afterCreateOrganization` hook, with its own search index.
+- **Option C (minimal)**: Use `.withIndex('by_name')` for prefix matching + client-side filtering for privacy. This is the simplest but doesn't scale past ~1000 orgs.
+
+Start with Option A. If the Better-Auth component schema rejects custom indexes, fall back to Option B.
 
 **Implementation Steps**:
 
-1. Open `convex/joinRequests.ts`
+1. Create `convex/orgDiscovery.ts`:
 2. Add organization search function:
 
 ```typescript
-/**
- * Search for organizations that are publicly discoverable.
- * Returns organizations matching the search query.
- */
+import { query } from './_generated/server'
+import { v } from 'convex/values'
+import { requireAuth } from './auth_helpers'
+
 export const searchPublicOrganizations = query({
   args: {
     query: v.optional(v.string()),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx)
-
+    const user = await requireAuth(ctx)
     const limit = args.limit ?? 20
 
-    // Get all organizations
-    // Note: In production, you'd want to filter by a 'isPublic' or 'allowJoinRequests' field
+    // Option A: Use search index (preferred)
+    // const orgs = await ctx.db
+    //   .query('organization')
+    //   .withSearchIndex('search_name', (q) =>
+    //     q.search('name', args.query ?? '').eq('metadata.allowJoinRequests', true)
+    //   )
+    //   .take(limit)
+
+    // Option C: Filtered scan (fallback for initial implementation)
     let orgs = await ctx.db
       .query('organization')
       .order('desc')
-      .take(limit * 2) // Take more to account for filtering
+      .take(limit * 2)
 
     // Filter by search query if provided
     if (args.query && args.query.trim()) {
@@ -3814,20 +3846,33 @@ export const searchPublicOrganizations = query({
       )
     }
 
-    // Return limited results
-    return orgs.slice(0, limit).map((org) => ({
-      id: org.id,
-      name: org.name,
-      slug: org.slug,
-      logo: org.logo,
-      createdAt: org.createdAt,
-    }))
+    // Privacy filter: only show discoverable orgs
+    // Check org.metadata.allowJoinRequests !== false (default: discoverable)
+    orgs = orgs.filter((org) => {
+      const metadata = org.metadata as Record<string, unknown> | undefined
+      return !metadata || metadata.allowJoinRequests !== false
+    })
+
+    // Exclude orgs the user is already a member of
+    const userMemberships = await ctx.db
+      .query('member')
+      .withIndex('by_userId', (q) => q.eq('userId', user.id))
+      .collect()
+    const memberOrgIds = new Set(userMemberships.map((m) => m.organizationId))
+
+    return orgs
+      .filter((org) => !memberOrgIds.has(org.id))
+      .slice(0, limit)
+      .map((org) => ({
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        logo: org.logo,
+        createdAt: org.createdAt,
+      }))
   },
 })
 
-/**
- * Get public profile of an organization for join request.
- */
 export const getPublicOrganizationProfile = query({
   args: {
     organizationId: v.string(),
@@ -3866,8 +3911,10 @@ export const getPublicOrganizationProfile = query({
    - `by_organizationId` on member table
 
 **Acceptance Criteria**:
-- [ ] `searchPublicOrganizations` query exists
-- [ ] Search filters by name and slug
+- [ ] `convex/orgDiscovery.ts` exists as a dedicated module
+- [ ] `searchPublicOrganizations` query exists with privacy filter
+- [ ] Search filters by name and slug (with search index or fallback)
+- [ ] Orgs the user is already a member of are excluded
 - [ ] Returns limited, safe public data only
 - [ ] `getPublicOrganizationProfile` returns org details with member count
 - [ ] All queries require authentication
@@ -3936,7 +3983,7 @@ function BrowseOrganizationsPage() {
     setTimeout(() => setDebouncedQuery(value), 300)
   }
 
-  const organizations = useQuery(api.joinRequests.searchPublicOrganizations, {
+  const organizations = useQuery(api.orgDiscovery.searchPublicOrganizations, {
     query: debouncedQuery || undefined,
     limit: 20,
   })
@@ -4466,3 +4513,669 @@ import InviteMemberDialog from '@/components/organization/InviteMemberDialog'
 **Definition of Done**: Join requests admin panel works with approve/reject functionality.
 
 ---
+
+### Task 6.5: Join Request Lifecycle Enhancements
+
+**Complexity**: Medium (2-3 hours)
+
+**Dependencies**: Task 1.5, 1.6 complete
+
+**Context**:
+Enhance the join request lifecycle beyond the basic `pending → approved | rejected` flow. Add `cancelled` status (soft-delete for audit trail instead of hard delete) and `expired` status (auto-expire stale requests).
+
+**Requirements**:
+- **File to modify**: `convex/joinRequests.ts`
+- Change `cancelJoinRequest` from hard delete to status update (`cancelled`)
+- Add scheduled function to auto-expire requests older than configurable period
+- Update `listMyJoinRequests` to include cancelled/expired requests with status labels
+
+**Implementation Steps**:
+
+1. Update `cancelJoinRequest` to use status update instead of delete:
+
+```typescript
+export const cancelJoinRequest = mutation({
+  args: { requestId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireAuth(ctx)
+    const request = await ctx.db
+      .query('joinRequest')
+      .filter((q) => q.eq(q.field('id'), args.requestId))
+      .first()
+
+    if (!request) throw new Error('Join request not found')
+    if (request.userId !== user.id) throw new Error('You can only cancel your own requests')
+    if (request.status !== 'pending') throw new Error('Only pending requests can be cancelled')
+
+    await ctx.db.patch(request._id, {
+      status: 'cancelled',
+      reviewedAt: Date.now(),
+    })
+
+    return { success: true }
+  },
+})
+```
+
+2. Add auto-expire scheduled function (optional, can be a cron or manual trigger):
+
+```typescript
+export const expireStaleRequests = mutation({
+  args: { maxAgeMs: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const maxAge = args.maxAgeMs ?? 30 * 24 * 60 * 60 * 1000 // 30 days default
+    const cutoff = Date.now() - maxAge
+
+    const staleRequests = await ctx.db
+      .query('joinRequest')
+      .withIndex('by_status_and_organizationId', (q) => q.eq('status', 'pending'))
+      .filter((q) => q.lt(q.field('createdAt'), cutoff))
+      .collect()
+
+    for (const request of staleRequests) {
+      await ctx.db.patch(request._id, { status: 'expired' })
+    }
+
+    return { expired: staleRequests.length }
+  },
+})
+```
+
+**Acceptance Criteria**:
+- [ ] `cancelJoinRequest` updates status to `cancelled` instead of deleting
+- [ ] `expireStaleRequests` mutation exists for auto-expiry
+- [ ] `listMyJoinRequests` returns all statuses including `cancelled` and `expired`
+- [ ] UI shows appropriate labels for each status
+
+**Definition of Done**: Lifecycle supports pending, approved, rejected, cancelled, expired states.
+
+---
+
+## Phase 7: Subscription-Gated Organization Creation
+
+### Task 7.1: Subscription Schema & Backend
+
+**Complexity**: Medium (2-3 hours)
+
+**Dependencies**: Phase 1 complete
+
+**Context**:
+Add a subscription table to track user plans (free/pro). This gates organization creation behind a Pro subscription. For initial implementation, all users default to free; Pro status can be manually set in the database until payment integration is complete.
+
+**Requirements**:
+- **File to modify**: `convex/schema.ts`
+- Add `subscription` table with plan, status, Stripe fields
+
+**Implementation Steps**:
+
+1. Open `convex/schema.ts`
+2. Add the subscription table:
+
+```typescript
+subscription: defineTable({
+  userId: v.string(),
+  plan: v.string(),           // 'free' | 'pro'
+  status: v.string(),         // 'active' | 'canceled' | 'past_due' | 'trialing'
+  stripeCustomerId: v.optional(v.string()),
+  stripeSubscriptionId: v.optional(v.string()),
+  currentPeriodStart: v.number(),
+  currentPeriodEnd: v.number(),
+})
+  .index('by_userId', ['userId'])
+  .index('by_stripeCustomerId', ['stripeCustomerId']),
+```
+
+3. Run `npx convex dev` to sync schema
+
+**Acceptance Criteria**:
+- [ ] `subscription` table exists with all fields
+- [ ] Indexes on `userId` and `stripeCustomerId`
+- [ ] Schema syncs without errors
+
+**Definition of Done**: Subscription table exists in Convex database.
+
+---
+
+### Task 7.2: Subscription Check Helpers
+
+**Complexity**: Medium (2-3 hours)
+
+**Dependencies**: Task 7.1 complete
+
+**Context**:
+Backend helpers for checking subscription status. These are used both by the frontend (via Convex queries) and by backend hooks (e.g., `beforeCreateOrganization`).
+
+**Requirements**:
+- **File to create**: `convex/subscription.ts`
+- **File to create**: `src/hooks/useSubscription.ts`
+
+**Implementation Steps**:
+
+1. Create `convex/subscription.ts`:
+
+```typescript
+import { query } from './_generated/server'
+import { v } from 'convex/values'
+import { requireAuth } from './auth_helpers'
+
+export const getUserSubscription = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireAuth(ctx)
+
+    const subscription = await ctx.db
+      .query('subscription')
+      .withIndex('by_userId', (q) => q.eq('userId', user.id))
+      .first()
+
+    if (!subscription) {
+      return { plan: 'free', status: 'active', isPro: false }
+    }
+
+    return {
+      plan: subscription.plan,
+      status: subscription.status,
+      isPro: subscription.plan === 'pro' && subscription.status === 'active',
+      currentPeriodEnd: subscription.currentPeriodEnd,
+    }
+  },
+})
+
+export const canCreateOrganization = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireAuth(ctx)
+
+    const subscription = await ctx.db
+      .query('subscription')
+      .withIndex('by_userId', (q) => q.eq('userId', user.id))
+      .first()
+
+    if (!subscription) return false
+    return subscription.plan === 'pro' && subscription.status === 'active'
+  },
+})
+```
+
+2. Create `src/hooks/useSubscription.ts`:
+
+```typescript
+import { useQuery } from 'convex/react'
+import { api } from '../../convex/_generated/api'
+import { useConvexAuthReady } from '@/hooks/useConvexAuthReady'
+
+export function useSubscription() {
+  const { isAuthenticated } = useConvexAuthReady()
+
+  const subscription = useQuery(
+    api.subscription.getUserSubscription,
+    isAuthenticated ? {} : 'skip'
+  )
+
+  return {
+    plan: subscription?.plan ?? 'free',
+    status: subscription?.status ?? 'active',
+    isPro: subscription?.isPro ?? false,
+    isLoading: subscription === undefined,
+  }
+}
+```
+
+**Acceptance Criteria**:
+- [ ] `convex/subscription.ts` exists with `getUserSubscription` and `canCreateOrganization`
+- [ ] `src/hooks/useSubscription.ts` exists
+- [ ] Returns `isPro: true` only when plan is 'pro' and status is 'active'
+- [ ] Defaults to free plan when no subscription record exists
+
+**Definition of Done**: Subscription queries and client hook work correctly.
+
+---
+
+### Task 7.3: Gate CreateOrganizationDialog
+
+**Complexity**: Medium (2-3 hours)
+
+**Dependencies**: Task 7.2 complete
+
+**Context**:
+Conditionally render the organization creation form based on subscription status. Non-Pro users see an upgrade prompt instead of the creation form. Backend also validates via a `beforeCreateOrganization` hook in `convex/betterAuth/auth.ts`.
+
+**Requirements**:
+- **File to modify**: `src/components/organization/CreateOrganizationDialog.tsx`
+- **File to modify**: `convex/betterAuth/auth.ts` (add server-side validation)
+
+**Implementation Steps**:
+
+1. Update `CreateOrganizationDialog.tsx` to check subscription:
+
+```typescript
+// In CreateOrganizationDialog component:
+const { isPro, isLoading: isLoadingSubscription } = useSubscription()
+
+// Conditional rendering:
+// isLoadingSubscription → skeleton
+// !isPro → <UpgradePlanDialog /> or inline upgrade prompt
+// isPro → normal creation form
+```
+
+2. Add server-side validation in `convex/betterAuth/auth.ts`:
+
+```typescript
+// In organization() plugin config:
+organization({
+  // ... existing config ...
+  beforeCreateOrganization: async (ctx, data) => {
+    // Check subscription
+    const subscription = await ctx.runQuery(api.subscription.canCreateOrganization, {})
+    if (!subscription) {
+      throw new Error('Pro subscription required to create organizations')
+    }
+  },
+})
+```
+
+**Acceptance Criteria**:
+- [ ] Non-Pro users see upgrade prompt instead of creation form
+- [ ] Pro users see normal creation form
+- [ ] Loading state while checking subscription
+- [ ] Backend validates Pro status in `beforeCreateOrganization` hook
+- [ ] Cannot bypass gate via direct API call
+
+**Definition of Done**: Organization creation is gated behind Pro subscription on both client and server.
+
+---
+
+### Task 7.4: Payment Gateway Placeholder
+
+**Complexity**: Small (1-2 hours)
+
+**Dependencies**: Task 7.3 complete
+
+**Context**:
+A modular dialog component that serves as a placeholder for future Stripe integration. Shows "coming soon" messaging and can be swapped for real Stripe Checkout when payment infrastructure is ready.
+
+**Requirements**:
+- **File to create**: `src/components/organization/UpgradePlanDialog.tsx`
+- **File to modify**: `src/components/nav-user.tsx` (wire "Upgrade to Pro" menu item)
+
+**Implementation Steps**:
+
+1. Create `src/components/organization/UpgradePlanDialog.tsx`:
+
+```typescript
+'use client'
+
+import { Sparkles } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+
+interface UpgradePlanDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export default function UpgradePlanDialog({ open, onOpenChange }: UpgradePlanDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            Upgrade to Pro
+          </DialogTitle>
+          <DialogDescription>
+            Create unlimited organizations with a Pro plan.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-6 space-y-4">
+          <div className="rounded-lg border p-4">
+            <h3 className="font-semibold">Pro Plan</h3>
+            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+              <li>- Create unlimited organizations</li>
+              <li>- Unlimited team members</li>
+              <li>- Priority support</li>
+            </ul>
+          </div>
+          <p className="text-center text-sm text-muted-foreground">
+            Payment integration coming soon. Contact support for early access.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button disabled>
+            {/* TODO: Replace with Stripe Checkout redirect */}
+            Coming Soon
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+```
+
+2. Update `nav-user.tsx` "Upgrade to Pro" to open this dialog:
+
+```typescript
+import UpgradePlanDialog from '@/components/organization/UpgradePlanDialog'
+
+// Add state:
+const [showUpgrade, setShowUpgrade] = useState(false)
+
+// Replace existing menu item:
+<DropdownMenuItem onClick={() => setShowUpgrade(true)}>
+  <Sparkles />
+  Upgrade to Pro
+</DropdownMenuItem>
+
+// Add dialog at bottom of component:
+<UpgradePlanDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
+```
+
+**Acceptance Criteria**:
+- [ ] `src/components/organization/UpgradePlanDialog.tsx` exists
+- [ ] Shows Pro plan features and "coming soon" message
+- [ ] "Upgrade to Pro" in nav-user opens the dialog
+- [ ] Modular: easy to swap placeholder for Stripe Checkout
+- [ ] Used in CreateOrganizationDialog when user is not Pro
+
+**Definition of Done**: Upgrade dialog exists as a modular placeholder, wired into nav-user and CreateOrganizationDialog.
+
+---
+
+## Phase 8: Enhanced RBAC & Permissions
+
+### Task 8.1: Permission Model & Backend Helpers
+
+**Complexity**: Medium (3-4 hours)
+
+**Dependencies**: Phase 1 complete
+
+**Context**:
+Create centralized permission helpers to replace the ad-hoc role checks scattered across `joinRequests.ts`, `MembersList.tsx`, `OrgSettings.tsx`, and `useNotifications.ts`. All current checks use inline patterns like `['owner', 'admin'].includes(membership.role)`.
+
+**Requirements**:
+- **File to create**: `convex/permissions.ts`
+
+**Permission Matrix**:
+
+| Action | owner | admin | member |
+|--------|-------|-------|--------|
+| View org settings | yes | yes | no |
+| Update org settings | yes | yes | no |
+| Delete org | yes | no | no |
+| Invite member | yes | yes | no |
+| Remove member | yes | yes | no |
+| Change member role | yes | yes | no |
+| Create team | yes | yes | no |
+| Delete team | yes | yes | no |
+| Manage team members | yes | yes | no |
+| View join requests | yes | yes | no |
+| Approve/reject join requests | yes | yes | no |
+| Cancel own join request | self | self | self |
+| Browse organizations | yes | yes | yes |
+| Create organization | plan-gated | plan-gated | plan-gated |
+
+**Implementation Steps**:
+
+1. Create `convex/permissions.ts`:
+
+```typescript
+import { QueryCtx } from './_generated/server'
+import { requireAuth } from './auth_helpers'
+
+type OrgRole = 'owner' | 'admin' | 'member'
+
+async function getOrgMembership(ctx: QueryCtx, userId: string, orgId: string) {
+  return await ctx.db
+    .query('member')
+    .withIndex('by_userId', (q) => q.eq('userId', userId))
+    .filter((q) => q.eq(q.field('organizationId'), orgId))
+    .first()
+}
+
+export async function requireOrgRole(
+  ctx: QueryCtx,
+  orgId: string,
+  allowedRoles: OrgRole[]
+) {
+  const user = await requireAuth(ctx)
+  const membership = await getOrgMembership(ctx, user.id, orgId)
+
+  if (!membership || !allowedRoles.includes(membership.role as OrgRole)) {
+    throw new Error(`Requires role: ${allowedRoles.join(' or ')}`)
+  }
+
+  return { user, membership }
+}
+
+export async function canInviteMembers(ctx: QueryCtx, orgId: string) {
+  return requireOrgRole(ctx, orgId, ['owner', 'admin'])
+}
+
+export async function canManageJoinRequests(ctx: QueryCtx, orgId: string) {
+  return requireOrgRole(ctx, orgId, ['owner', 'admin'])
+}
+
+export async function canManageTeams(ctx: QueryCtx, orgId: string) {
+  return requireOrgRole(ctx, orgId, ['owner', 'admin'])
+}
+
+export async function canDeleteOrganization(ctx: QueryCtx, orgId: string) {
+  return requireOrgRole(ctx, orgId, ['owner'])
+}
+```
+
+2. Refactor `convex/joinRequests.ts` to use shared helpers:
+   - Replace inline role checks in `listPendingJoinRequests`, `approveJoinRequest`, `rejectJoinRequest` with `canManageJoinRequests(ctx, orgId)`
+
+**Acceptance Criteria**:
+- [ ] `convex/permissions.ts` exists with all helper functions
+- [ ] `requireOrgRole` validates user has required role in org
+- [ ] `canInviteMembers`, `canManageJoinRequests`, `canManageTeams`, `canDeleteOrganization` exist
+- [ ] Existing join request functions refactored to use shared helpers
+- [ ] All existing role checks still work after refactor
+
+**Definition of Done**: Centralized permission helpers exist and existing code is refactored to use them.
+
+---
+
+### Task 8.2: useOrgRole Hook & Conditional UI
+
+**Complexity**: Small (1-2 hours)
+
+**Dependencies**: Phase 3 complete
+
+**Context**:
+Extract a reusable hook that returns the current user's role in the active org. Use it across all org management components to conditionally render admin-only actions.
+
+**Requirements**:
+- **File to create**: `src/hooks/useOrgRole.ts`
+- **Files to modify**: `MembersList.tsx`, `TeamsList.tsx`, `OrgSettings.tsx`, `PendingInvitationsList.tsx` (replace inline role checks)
+
+**Implementation Steps**:
+
+1. Create `src/hooks/useOrgRole.ts`:
+
+```typescript
+import { authClient } from '@/lib/auth-client'
+
+export function useOrgRole() {
+  const { data: session } = authClient.useSession()
+  const { data: activeOrg } = authClient.useActiveOrganization()
+
+  const membership = activeOrg?.members?.find(
+    (m) => m.userId === session?.user?.id
+  )
+
+  return {
+    role: membership?.role ?? null,
+    isOwner: membership?.role === 'owner',
+    isAdmin: membership?.role === 'admin' || membership?.role === 'owner',
+    isMember: !!membership,
+  }
+}
+```
+
+2. Update components to use the hook:
+   - `MembersList.tsx`: replace `const isAdmin = currentUserMember?.role === 'admin' || ...`
+   - `TeamsList.tsx`: replace inline admin check
+   - `OrgSettings.tsx`: replace `const isOwner = activeOrg?.members?.some(...)`
+   - `PendingInvitationsList.tsx`: use `isAdmin` for cancel button visibility
+
+**Acceptance Criteria**:
+- [ ] `src/hooks/useOrgRole.ts` exists
+- [ ] Returns `role`, `isOwner`, `isAdmin`, `isMember`
+- [ ] At least 2 components refactored to use the hook
+- [ ] No regression in existing permission-enforced UI
+
+**Definition of Done**: Shared `useOrgRole` hook used across org management components.
+
+---
+
+### Task 8.3: Invitation Token System
+
+**Complexity**: Medium (3-4 hours)
+
+**Dependencies**: Task 5.1 complete
+
+**Context**:
+Add unique tokens to invitations so they can be shared via URL (`/app/invitations?token=<token>`). This allows invitations to work outside the in-app notification flow (e.g., shared via email or chat).
+
+**Requirements**:
+- **File to modify**: `convex/betterAuth/auth.ts` (add `beforeCreateInvitation` hook to generate token)
+- **File to modify**: `convex/invitations.ts` (add `getInvitationByToken` query)
+- **File to create**: `src/routes/_authed/app/invitations.tsx` (token-based accept page)
+
+**Implementation Steps**:
+
+1. In `convex/betterAuth/auth.ts`, generate a token when invitations are created:
+
+```typescript
+organization({
+  // ... existing config ...
+  // Note: Better Auth may not expose a beforeCreateInvitation hook directly.
+  // If not, add a token field after invitation creation via the adapter,
+  // or store tokens in a separate invitationToken table.
+
+  // Alternative: store tokens in a custom table
+  // Create invitationToken table in schema.ts:
+  // invitationToken: defineTable({
+  //   invitationId: v.string(),
+  //   token: v.string(),
+  //   createdAt: v.number(),
+  // }).index('by_token', ['token']).index('by_invitationId', ['invitationId'])
+})
+```
+
+2. Add token lookup query in `convex/invitations.ts`:
+
+```typescript
+export const getInvitationByToken = query({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const tokenRecord = await ctx.db
+      .query('invitationToken')
+      .withIndex('by_token', (q) => q.eq('token', args.token))
+      .first()
+
+    if (!tokenRecord) return null
+
+    const invitation = await ctx.db
+      .query('invitation')
+      .filter((q) => q.eq(q.field('id'), tokenRecord.invitationId))
+      .first()
+
+    if (!invitation || invitation.status !== 'pending') return null
+
+    const org = await ctx.db
+      .query('organization')
+      .filter((q) => q.eq(q.field('id'), invitation.organizationId))
+      .first()
+
+    return {
+      id: invitation.id,
+      email: invitation.email,
+      role: invitation.role,
+      organizationName: org?.name ?? 'Unknown',
+      organizationSlug: org?.slug,
+      organizationId: invitation.organizationId,
+      expiresAt: invitation.expiresAt,
+    }
+  },
+})
+```
+
+3. Create `src/routes/_authed/app/invitations.tsx`:
+
+```typescript
+import { createFileRoute, useSearch } from '@tanstack/react-router'
+import { useQuery } from 'convex/react'
+import { api } from '../../../../convex/_generated/api'
+import { useNotificationActions } from '@/hooks/useNotificationActions'
+
+export const Route = createFileRoute('/_authed/app/invitations')({
+  component: InvitationAcceptPage,
+})
+
+function InvitationAcceptPage() {
+  const { token } = useSearch({ strict: false }) as { token?: string }
+  const invitation = useQuery(
+    api.invitations.getInvitationByToken,
+    token ? { token } : 'skip'
+  )
+  const actions = useNotificationActions()
+
+  // Render invitation details with accept/decline buttons
+  // Handle expired/invalid tokens
+}
+```
+
+**Acceptance Criteria**:
+- [ ] Invitation tokens are generated when invitations are created
+- [ ] `/app/invitations?token=<token>` shows invitation details
+- [ ] Accept/decline works from the token URL
+- [ ] Expired/invalid tokens show appropriate error
+- [ ] Works for logged-in users (unauthenticated users redirected to login first)
+
+**Definition of Done**: Invitations can be accepted via URL with token-based lookup.
+
+---
+
+### Task 8.4: Refactor Existing Role Checks
+
+**Complexity**: Small (1-2 hours)
+
+**Dependencies**: Task 8.1, 8.2 complete
+
+**Context**:
+Final cleanup task to replace all remaining inline role checks with the centralized `permissions.ts` backend helpers and `useOrgRole` frontend hook.
+
+**Requirements**:
+- **Files to modify**: All components and backend functions with inline role checks
+- Ensure no `['owner', 'admin'].includes(membership.role)` patterns remain outside `permissions.ts`
+- Ensure no `activeOrg?.members?.some(...)` patterns remain outside `useOrgRole.ts`
+
+**Scope**:
+- `convex/joinRequests.ts`: replace inline checks with `canManageJoinRequests`
+- `convex/invitations.ts`: use shared helpers if applicable
+- `src/components/organization/MembersList.tsx`: use `useOrgRole()`
+- `src/components/organization/TeamsList.tsx`: use `useOrgRole()`
+- `src/components/organization/OrgSettings.tsx`: use `useOrgRole()`
+- `src/hooks/useNotifications.ts`: use `useOrgRole()` or shared logic
+
+**Acceptance Criteria**:
+- [ ] No inline role check patterns remain in component code
+- [ ] All backend role checks use `permissions.ts` helpers
+- [ ] All frontend role checks use `useOrgRole()` hook
+- [ ] No regression in existing functionality
+
+**Definition of Done**: All role checks centralized, codebase consistent.
