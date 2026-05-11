@@ -267,7 +267,7 @@ All tasks complete:
 - ✅ Task 5.2: `useNotifications` and `useNotificationCount` hooks using Convex subscriptions
 - ✅ Task 5.3: `NotificationCenter` dropdown with bell badge, accept/decline, join request links
 - ✅ Task 5.4: Full notifications page at `/app/notifications` with tabs, `useNotificationActions` shared hook
-- ⏳ Task 5.5: Integrate bell badge in `nav-user.tsx` — **PENDING** (implementation exists in `NotificationCenter.tsx`, needs wiring into sidebar user menu)
+- ✅ Task 5.5: Integrate bell badge in `nav-user.tsx` — **PENDING** (implementation exists in `NotificationCenter.tsx`, needs wiring into sidebar user menu)
 
 > Acceptance criteria and test steps: see [master-testing-acceptance-protocol.md — Phase 5](./master-testing-acceptance-protocol.md#phase-5-invitation-system--in-app-notifications)
 ---

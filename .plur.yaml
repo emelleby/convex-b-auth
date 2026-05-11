@@ -1,0 +1,3 @@
+# PLUR project defaults — read by hooks for automatic scoping
+domain: convex-b-auth
+scope: project:convex-b-auth
