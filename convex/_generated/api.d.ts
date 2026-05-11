@@ -16,6 +16,7 @@ import type * as http from "../http.js";
 import type * as invitations from "../invitations.js";
 import type * as joinRequests from "../joinRequests.js";
 import type * as orgCleanup from "../orgCleanup.js";
+import type * as orgDiscovery from "../orgDiscovery.js";
 import type * as people from "../people.js";
 import type * as testAuth from "../testAuth.js";
 import type * as todos from "../todos.js";
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   invitations: typeof invitations;
   joinRequests: typeof joinRequests;
   orgCleanup: typeof orgCleanup;
+  orgDiscovery: typeof orgDiscovery;
   people: typeof people;
   testAuth: typeof testAuth;
   todos: typeof todos;

@@ -80,6 +80,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
+    "@edge-runtime/vm": "^5.0.0",
     "@inlang/paraglide-js": "^2.13.1",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-event-client": "latest",
@@ -91,6 +92,7 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.1.4",
     "babel-plugin-react-compiler": "^1.0.0",
+    "convex-test": "^0.0.51",
     "jsdom": "^28.1.0",
     "typescript": "^5.7.2",
     "vite": "^7.3.1",

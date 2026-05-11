@@ -45,7 +45,7 @@
 - ✅ Task 5.5: Update badge Notification Center - **PENDING** (integrate NotificationCenter `<Bell>` badge in the user menu's avatar in sidebar; currently just a plain link to `/app/notifications`). There is already an implementation of this in the NotificationCenter.tsx file. Just the badge with the count. The link stays the same.
 
 ### Phase 6: Organization Discovery & Join Request System (~14-18 hours)
-- ⏳ Task 6.1: Organization Search API with Privacy Filters - **PENDING**
+- ✅ Task 6.1: Organization Search API with Privacy Filters - **COMPLETE** (Added search index, extended component adapter, and implemented discovery queries with membership/privacy filtering)
 - ⏳ Task 6.2: Browse Organizations Page - **PENDING**
 - ⏳ Task 6.3: Join Request Dialog - **PENDING**
 - ⏳ Task 6.4: Join Requests Admin in Org Settings - **PENDING**
@@ -274,7 +274,7 @@ All tasks complete:
 
 ## Phase 6: Join Request System
 
-### Task 6.1: Organization Search API with Privacy Filters
+### Task 6.1: Organization Search API with Privacy Filters — **COMPLETE**
 
 **Complexity**: Medium (3-4 hours)
 
