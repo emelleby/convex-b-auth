@@ -46,8 +46,8 @@
 
 ### Phase 6: Organization Discovery & Join Request System (~14-18 hours)
 - ✅ Task 6.1: Organization Search API with Privacy Filters - **COMPLETE** (Added search index, extended component adapter, and implemented discovery queries with membership/privacy filtering)
-- ⏳ Task 6.2: Browse Organizations Page - **PENDING**
-- ⏳ Task 6.3: Join Request Dialog - **PENDING**
+- ✅ Task 6.2: Browse Organizations Page - **COMPLETE** (`src/routes/_authed/app/browse-organizations.tsx`, sidebar nav added)
+- ✅ Task 6.3: Join Request Dialog - **COMPLETE** (`src/components/organization/JoinRequestDialog.tsx`)
 - ⏳ Task 6.4: Join Requests Admin in Org Settings - **PENDING**
 - ⏳ Task 6.5: Join Request Lifecycle Enhancements - **PENDING**
 
@@ -424,7 +424,7 @@ export const getPublicOrganizationProfile = query({
 
 ---
 
-### Task 6.2: Create Browse Organizations Page
+### Task 6.2: Create Browse Organizations Page — **COMPLETE**
 
 **Complexity**: Medium (3-4 hours)
 
@@ -609,7 +609,7 @@ function BrowseOrganizationsPage() {
 
 ---
 
-### Task 6.3: Create Join Request Dialog
+### Task 6.3: Create Join Request Dialog — **COMPLETE**
 
 **Complexity**: Small (1-2 hours)
 
