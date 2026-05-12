@@ -8,6 +8,7 @@ import type { GenericCtx } from '@convex-dev/better-auth'
 import type { DataModel } from '../_generated/dataModel'
 import type { GenericActionCtx } from 'convex/server'
 import schema from './schema'
+import type { User } from 'better-auth'
 
 // Use the local schema so the component adapter validators include
 // organization plugin tables (member, organization, invitation, team, teamMember).
@@ -36,6 +37,18 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) => ({
         maximumTeams: 10,
       },
       membershipLimit: 100,
+      /**
+       * Server-side gate: only Pro subscribers may create organizations.
+       * The user.id here is the Convex _id (mapped by the Better Auth adapter).
+       */
+      allowUserToCreateOrganization: async (user: User): Promise<boolean> => {
+        if (!('runQuery' in ctx)) return true // CLI/test mode: allow
+        const actionCtx = ctx as unknown as GenericActionCtx<DataModel>
+        return actionCtx.runQuery(
+          internal.subscription.canCreateOrganizationInternal,
+          { userId: user.id }
+        )
+      },
       organizationHooks: {
         afterCreateOrganization: async ({ organization }) => {
           if ('runMutation' in ctx) {

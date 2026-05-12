@@ -20,6 +20,7 @@ import type * as orgCleanup from "../orgCleanup.js";
 import type * as orgDiscovery from "../orgDiscovery.js";
 import type * as orgSettings from "../orgSettings.js";
 import type * as people from "../people.js";
+import type * as subscription from "../subscription.js";
 import type * as testAuth from "../testAuth.js";
 import type * as todos from "../todos.js";
 
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   orgDiscovery: typeof orgDiscovery;
   orgSettings: typeof orgSettings;
   people: typeof people;
+  subscription: typeof subscription;
   testAuth: typeof testAuth;
   todos: typeof todos;
 }>;

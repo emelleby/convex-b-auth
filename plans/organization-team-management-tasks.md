@@ -2,7 +2,7 @@
 
 **Project**: Convex + Better-Auth Organization Plugin Implementation
 **Created**: 2026-03-17
-**Last updated**: 2026-05-12 (Implemented Task 6.5, fixed pending invitations display)
+**Last updated**: 2026-05-12 (Implemented Phase 7: Subscription-Gated Organization Creation)
 **Total Estimated Time**: ~100-130 hours
 **Phases**: 8
 
@@ -58,10 +58,10 @@
 - ✅ Task 6.8: Bulk CSV Member Invite - **COMPLETE** (Implemented 2026-05-12 — see details below)
 
 ### Phase 7: Subscription-Gated Organization Creation (~8-12 hours)
-- ⏳ Task 7.1: Subscription Schema & Backend - **PENDING**
-- ⏳ Task 7.2: Subscription Check Helpers - **PENDING**
-- ⏳ Task 7.3: Gate CreateOrganizationDialog - **PENDING**
-- ⏳ Task 7.4: Payment Gateway Placeholder - **PENDING**
+- ✅ Task 7.1: Subscription Schema & Backend - **COMPLETE**
+- ✅ Task 7.2: Subscription Check Helpers - **COMPLETE**
+- ✅ Task 7.3: Gate CreateOrganizationDialog - **COMPLETE**
+- ✅ Task 7.4: Payment Gateway Placeholder - **COMPLETE**
 
 ### Phase 8: Enhanced RBAC & Permissions (~10-14 hours)
 - ⏳ Task 8.1: Permission Model & Backend Helpers - **PENDING**
@@ -79,7 +79,7 @@
 4. ~~Phase 4: Team Management UI~~ — **COMPLETE** (condensed below)
 5. ~~Phase 5: Invitation System~~ — **COMPLETE** (condensed below; Task 5.5 pending minor UI integration)
 6. ~~Phase 6: Organization Discovery & Join Request System~~ — **COMPLETE** (All tasks finished, including Task 6.8 bulk invite)
-7. [Phase 7: Subscription-Gated Organization Creation](#phase-7-subscription-gated-organization-creation) — **PENDING**
+7. ~~Phase 7: Subscription-Gated Organization Creation~~ — **COMPLETE**
 8. [Phase 8: Enhanced RBAC & Permissions](#phase-8-enhanced-rbac--permissions) — **PENDING**
 
 > **QA Reference**: All acceptance criteria and test checklists for every phase (including completed) are consolidated in [`master-testing-acceptance-protocol.md`](./master-testing-acceptance-protocol.md).
@@ -1498,7 +1498,7 @@ carol@example.com
 
 ---
 
-## Phase 7: Subscription-Gated Organization Creation
+## Phase 7: Subscription-Gated Organization Creation — COMPLETE
 
 ### Task 7.1: Subscription Schema & Backend
 
@@ -1535,11 +1535,15 @@ subscription: defineTable({
 3. Run `npx convex dev` to sync schema
 
 **Acceptance Criteria**:
-- [ ] `subscription` table exists with all fields
-- [ ] Indexes on `userId` and `stripeCustomerId`
-- [ ] Schema syncs without errors
+- [x] `subscription` table exists with all fields
+- [x] Indexes on `userId` and `stripeCustomerId`
+- [x] Schema syncs without errors
 
-**Definition of Done**: Subscription table exists in Convex database.
+**Implementation Details** (Completed 2026-05-12):
+- ✅ Added `subscription` table to `convex/schema.ts` with all required fields and indexes
+- ✅ `npx convex dev --once` ✓
+
+**Definition of Done**: ✅ Subscription table exists in Convex database.
 
 ---
 
@@ -1629,12 +1633,16 @@ export function useSubscription() {
 ```
 
 **Acceptance Criteria**:
-- [ ] `convex/subscription.ts` exists with `getUserSubscription` and `canCreateOrganization`
-- [ ] `src/hooks/useSubscription.ts` exists
-- [ ] Returns `isPro: true` only when plan is 'pro' and status is 'active'
-- [ ] Defaults to free plan when no subscription record exists
+- [x] `convex/subscription.ts` exists with `getUserSubscription` and `canCreateOrganization`
+- [x] `src/hooks/useSubscription.ts` exists
+- [x] Returns `isPro: true` only when plan is 'pro' and status is 'active'
+- [x] Defaults to free plan when no subscription record exists
 
-**Definition of Done**: Subscription queries and client hook work correctly.
+**Implementation Details** (Completed 2026-05-12):
+- ✅ `convex/subscription.ts` created with three exports: `getUserSubscription` (public query, uses `getOptionalAuth` for safe reactivity), `canCreateOrganization` (public query), and `canCreateOrganizationInternal` (internal query that accepts `userId: v.string()` — used by the `allowUserToCreateOrganization` server hook)
+- ✅ `src/hooks/useSubscription.ts` created; query is gated with `useConvexAuthReady` to avoid the JWT race condition; `isLoading` only returns `true` when authenticated but the query result is still `undefined`
+
+**Definition of Done**: ✅ Subscription queries and client hook work correctly.
 
 ---
 
@@ -1682,13 +1690,19 @@ organization({
 ```
 
 **Acceptance Criteria**:
-- [ ] Non-Pro users see upgrade prompt instead of creation form
-- [ ] Pro users see normal creation form
-- [ ] Loading state while checking subscription
-- [ ] Backend validates Pro status in `beforeCreateOrganization` hook
-- [ ] Cannot bypass gate via direct API call
+- [x] Non-Pro users see upgrade prompt instead of creation form
+- [x] Pro users see normal creation form
+- [x] Loading state while checking subscription
+- [x] Backend validates Pro status on the server
+- [x] Cannot bypass gate via direct API call
 
-**Definition of Done**: Organization creation is gated behind Pro subscription on both client and server.
+**Implementation Details** (Completed 2026-05-12):
+- ✅ `CreateOrganizationDialog` uses `useSubscription()` hook; renders a skeleton while loading, an inline upgrade prompt with a "Upgrade to Pro" CTA for free users, and the normal creation form for Pro users
+- ✅ Closing the inline gate dialog then opens `UpgradePlanDialog` as a separate step (avoids dialog-in-dialog UX issue)
+- ✅ Server-side gate uses `allowUserToCreateOrganization` (Better Auth's idiomatic API) rather than `beforeCreateOrganization` — it receives the `user` object directly and calls `internal.subscription.canCreateOrganizationInternal` via the Convex action context from the closure
+- ✅ Explicit `: Promise<boolean>` return type added to break TypeScript circular type inference
+
+**Definition of Done**: ✅ Organization creation is gated behind Pro subscription on both client and server.
 
 ---
 
@@ -1788,13 +1802,18 @@ const [showUpgrade, setShowUpgrade] = useState(false)
 ```
 
 **Acceptance Criteria**:
-- [ ] `src/components/organization/UpgradePlanDialog.tsx` exists
-- [ ] Shows Pro plan features and "coming soon" message
-- [ ] "Upgrade to Pro" in nav-user opens the dialog
-- [ ] Modular: easy to swap placeholder for Stripe Checkout
-- [ ] Used in CreateOrganizationDialog when user is not Pro
+- [x] `src/components/organization/UpgradePlanDialog.tsx` exists
+- [x] Shows Pro plan features and "coming soon" message
+- [x] "Upgrade to Pro" in nav-user opens the dialog
+- [x] Modular: easy to swap placeholder for Stripe Checkout
+- [x] Used in CreateOrganizationDialog when user is not Pro
 
-**Definition of Done**: Upgrade dialog exists as a modular placeholder, wired into nav-user and CreateOrganizationDialog.
+**Implementation Details** (Completed 2026-05-12):
+- ✅ `src/components/organization/UpgradePlanDialog.tsx` created — controlled dialog (`open`/`onOpenChange`), "Coming Soon" footer button with a `// TODO: Replace with Stripe Checkout redirect` comment for easy swap-out
+- ✅ `src/components/nav-user.tsx` updated: added `useState(false)` for `showUpgrade`, `onClick={() => setShowUpgrade(true)}` on the "Upgrade to Pro" menu item, `<UpgradePlanDialog>` rendered at the bottom of the fragment return
+- ✅ `npm run build` ✓, `npx convex dev --once` ✓
+
+**Definition of Done**: ✅ Upgrade dialog exists as a modular placeholder, wired into nav-user and CreateOrganizationDialog.
 
 ---
 

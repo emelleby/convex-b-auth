@@ -45,4 +45,15 @@ export default defineSchema({
     joinRequestExpiryDays: v.optional(v.number()),
   })
     .index('by_organizationId', ['organizationId']),
+  subscription: defineTable({
+    userId: v.string(),
+    plan: v.string(),                          // 'free' | 'pro'
+    status: v.string(),                        // 'active' | 'canceled' | 'past_due' | 'trialing'
+    stripeCustomerId: v.optional(v.string()),
+    stripeSubscriptionId: v.optional(v.string()),
+    currentPeriodStart: v.number(),
+    currentPeriodEnd: v.number(),
+  })
+    .index('by_userId', ['userId'])
+    .index('by_stripeCustomerId', ['stripeCustomerId']),
 })

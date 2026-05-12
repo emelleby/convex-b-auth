@@ -9,6 +9,7 @@ import {
 	LogOut,
 	Sparkles
 } from 'lucide-react'
+import { useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -28,12 +29,14 @@ import {
 } from '@/components/ui/sidebar'
 import { useNotificationCount } from '@/hooks/useNotifications'
 import { authClient } from '@/lib/auth-client'
+import UpgradePlanDialog from './organization/UpgradePlanDialog'
 
 export function NavUser() {
 	const { isMobile } = useSidebar()
 	const session = authClient.useSession()
 	const navigate = useNavigate()
 	const { count: unreadCount } = useNotificationCount()
+	const [showUpgrade, setShowUpgrade] = useState(false)
 
 	// Get initials from user name
 	const getInitials = (name: string) => {
@@ -71,40 +74,15 @@ export function NavUser() {
 	const initials = getInitials(user.name || 'User')
 
 	return (
-		<SidebarMenu>
-			<SidebarMenuItem>
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<SidebarMenuButton
-							size="lg"
-							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground "
-						>
-							<Avatar className="h-8 w-8 rounded-lg">
-								<AvatarImage
-									src={user.image || undefined}
-									alt={user.name || 'User'}
-								/>
-								<AvatarFallback className="rounded-lg">
-									{initials}
-								</AvatarFallback>
-							</Avatar>
-							<div className="grid flex-1 text-left text-sm leading-tight">
-								<span className="truncate font-semibold">
-									{user.name || 'User'}
-								</span>
-								<span className="truncate text-xs">{user.email}</span>
-							</div>
-							<ChevronsUpDown className="ml-auto size-4" />
-						</SidebarMenuButton>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent
-						className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-						side={isMobile ? 'bottom' : 'right'}
-						align="end"
-						sideOffset={4}
-					>
-						<DropdownMenuLabel className="p-0 font-normal">
-							<div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+		<>
+			<SidebarMenu>
+				<SidebarMenuItem>
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<SidebarMenuButton
+								size="lg"
+								className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground "
+							>
 								<Avatar className="h-8 w-8 rounded-lg">
 									<AvatarImage
 										src={user.image || undefined}
@@ -120,56 +98,84 @@ export function NavUser() {
 									</span>
 									<span className="truncate text-xs">{user.email}</span>
 								</div>
-							</div>
-						</DropdownMenuLabel>
-						<DropdownMenuSeparator />
-						<DropdownMenuGroup>
-							<DropdownMenuItem>
-								<Sparkles />
-								Upgrade to Pro
-							</DropdownMenuItem>
-						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
-						<DropdownMenuGroup>
-							<DropdownMenuItem>
-								<BadgeCheck />
-								Account
-							</DropdownMenuItem>
-							<DropdownMenuItem>
-								<CreditCard />
-								Billing
-							</DropdownMenuItem>
-							<DropdownMenuItem asChild>
-								<Link
-									to="/app/notifications"
-									className="flex items-center w-full cursor-pointer"
-								>
-									<Bell />
-									Notifications
-									{unreadCount > 0 && (
-										<Badge
-											variant="destructive"
-											className="ml-auto h-5 min-w-5 justify-center px-1.5 text-[10px]"
-										>
-											{unreadCount > 99 ? '99+' : unreadCount}
-										</Badge>
-									)}
-								</Link>
-							</DropdownMenuItem>
-						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem
-							onClick={async () => {
-								await authClient.signOut()
-								navigate({ to: '/login' })
-							}}
+								<ChevronsUpDown className="ml-auto size-4" />
+							</SidebarMenuButton>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent
+							className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+							side={isMobile ? 'bottom' : 'right'}
+							align="end"
+							sideOffset={4}
 						>
-							<LogOut />
-							Log out
-						</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenu>
-			</SidebarMenuItem>
-		</SidebarMenu>
+							<DropdownMenuLabel className="p-0 font-normal">
+								<div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+									<Avatar className="h-8 w-8 rounded-lg">
+										<AvatarImage
+											src={user.image || undefined}
+											alt={user.name || 'User'}
+										/>
+										<AvatarFallback className="rounded-lg">
+											{initials}
+										</AvatarFallback>
+									</Avatar>
+									<div className="grid flex-1 text-left text-sm leading-tight">
+										<span className="truncate font-semibold">
+											{user.name || 'User'}
+										</span>
+										<span className="truncate text-xs">{user.email}</span>
+									</div>
+								</div>
+							</DropdownMenuLabel>
+							<DropdownMenuSeparator />
+							<DropdownMenuGroup>
+								<DropdownMenuItem onClick={() => setShowUpgrade(true)}>
+									<Sparkles />
+									Upgrade to Pro
+								</DropdownMenuItem>
+							</DropdownMenuGroup>
+							<DropdownMenuSeparator />
+							<DropdownMenuGroup>
+								<DropdownMenuItem>
+									<BadgeCheck />
+									Account
+								</DropdownMenuItem>
+								<DropdownMenuItem>
+									<CreditCard />
+									Billing
+								</DropdownMenuItem>
+								<DropdownMenuItem asChild>
+									<Link
+										to="/app/notifications"
+										className="flex items-center w-full cursor-pointer"
+									>
+										<Bell />
+										Notifications
+										{unreadCount > 0 && (
+											<Badge
+												variant="destructive"
+												className="ml-auto h-5 min-w-5 justify-center px-1.5 text-[10px]"
+											>
+												{unreadCount > 99 ? '99+' : unreadCount}
+											</Badge>
+										)}
+									</Link>
+								</DropdownMenuItem>
+							</DropdownMenuGroup>
+							<DropdownMenuSeparator />
+							<DropdownMenuItem
+								onClick={async () => {
+									await authClient.signOut()
+									navigate({ to: '/login' })
+								}}
+							>
+								<LogOut />
+								Log out
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</SidebarMenuItem>
+			</SidebarMenu>
+			<UpgradePlanDialog open={showUpgrade} onOpenChange={setShowUpgrade} />
+		</>
 	)
 }
