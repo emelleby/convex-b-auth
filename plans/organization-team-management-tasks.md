@@ -55,7 +55,7 @@
 - ✅ Task 6.6: Notification Read/Unread UX Improvements - **COMPLETE** (Persistent history, visual read/unread states, checkbox-based UI, mark-all-as-read action)
 - ✅ Task 6.7: Invitation Validity Period Setting - **COMPLETE**
 - ✅ Task 6.7a: Fixed Pending Invitations Display - **COMPLETE** (Implemented 2026-05-12 — see details below)
-- ⏳ Task 6.8: Bulk CSV Member Invite - **PENDING**
+- ✅ Task 6.8: Bulk CSV Member Invite - **COMPLETE** (Implemented 2026-05-12 — see details below)
 
 ### Phase 7: Subscription-Gated Organization Creation (~8-12 hours)
 - ⏳ Task 7.1: Subscription Schema & Backend - **PENDING**
@@ -78,7 +78,7 @@
 3. ~~Phase 3: Organization Management UI~~ — **COMPLETE** (condensed below)
 4. ~~Phase 4: Team Management UI~~ — **COMPLETE** (condensed below)
 5. ~~Phase 5: Invitation System~~ — **COMPLETE** (condensed below; Task 5.5 pending minor UI integration)
-6. ~~Phase 6: Organization Discovery & Join Request System~~ — **COMPLETE** (All core tasks finished; Task 6.8 bulk invite pending)
+6. ~~Phase 6: Organization Discovery & Join Request System~~ — **COMPLETE** (All tasks finished, including Task 6.8 bulk invite)
 7. [Phase 7: Subscription-Gated Organization Creation](#phase-7-subscription-gated-organization-creation) — **PENDING**
 8. [Phase 8: Enhanced RBAC & Permissions](#phase-8-enhanced-rbac--permissions) — **PENDING**
 
@@ -1451,50 +1451,50 @@ export const listOrganizationPendingInvitations = query({
 
 **Dependencies**: Task 3.3 (InviteMemberDialog), Task 6.7 (org settings for expiry)
 
+**Status**: ✅ COMPLETE (Implemented 2026-05-12)
+
 **Context**:
 Admins need to onboard many members at once. A CSV upload dialog allows pasting or uploading a file, previewing the parsed list, then submitting all invitations in one action.
 
 **CSV format** (first row is optional header):
 ```
-email,name,role
-alice@example.com,Alice Smith,member
+email,name,role,team
+alice@example.com,Alice Smith,member,Engineering
 bob@example.com,,admin
 carol@example.com
 ```
-- `email` required; `name` and `role` optional
+- `email` required; `name`, `role`, and `team` optional
 - Role defaults to `member` if omitted or invalid
+- Team matched case-insensitively against existing org team names; unmatched names shown as a warning in the preview but do not block submission
+- Both `,` and `;` are supported as delimiters (auto-detected from the first line)
 - Invalid emails are flagged in the preview and excluded from submission
 
-**Files to create/modify**:
+**Files created/modified**:
 - `src/components/organization/BulkInviteDialog.tsx` *(new)* — full dialog component
-- `src/routes/_authed/app/organization.tsx` (or the Invitations tab card) — add "Bulk Invite" button
+- `src/routes/_authed/app/organization.tsx` — added "Bulk Invite" button next to "Invite Member" in the Invitations tab card header
 
-**BulkInviteDialog implementation outline**:
-
-1. **Upload step**: Textarea (paste CSV) + file input (`accept=".csv"`). File input reads via `FileReader`. Both populate the same raw string state.
-2. **Parse step** (client-side, no library needed for simple CSV):
-   - Split by newlines, skip empty lines
-   - Detect and skip header row (`email` in first cell)
-   - For each row: extract email, name (optional), role (optional, validate against `['member', 'admin', 'owner']`)
-   - Validate email format with a simple regex
-   - Produce `{ email, name?, role, valid: boolean, error?: string }[]`
-3. **Preview step**: Table showing parsed rows. Invalid rows highlighted in red with error reason. Valid row count shown. "Send X invitations" button.
-4. **Submit step**: Loop through valid rows, call `authClient.organization.createInvitation` for each, with `expiresIn` from org settings. Collect results. Show a summary: "X sent, Y failed" with per-failure details.
-5. **Error handling**: Rate limit awareness — if many invitations fail, surface a consolidated error. Do not abort early; attempt all.
-
-**UI placement**: Add a "Bulk Invite" button next to the existing "Invite Member" button in the Invitations tab card header.
+**Implementation notes**:
+- 3-step dialog: **Input** → **Preview** → **Results**
+- `detectDelimiter(firstLine)` checks for `;` before falling back to `,`; applied consistently to the header-skip check and all data rows
+- `parseCSV` extracts `email`, `name`, `role`, `teamName` from each row; email is trimmed and validated only after the line has been split
+- Teams fetched via `useQuery` + `authClient.organization.listTeams`; a `Map<lowerCaseName, id>` is built for O(1) lookup at submit time
+- Invalid-team names render in amber in the preview (`"Engineering (not found)"`) so admins can spot typos before sending
+- Submit loops valid rows sequentially via `authClient.organization.inviteMember`, passing `teamId` when resolved; `patchInvitationExpiry` called after each successful invite to honour the org's `invitationValidityDays` setting
+- All results collected without early abort; toast + per-failure detail list shown on the results screen
 
 **Acceptance Criteria**:
-- [ ] `BulkInviteDialog` component exists
-- [ ] Accepts CSV via paste (textarea) and file upload
-- [ ] Parses email (required), name (optional), role (optional, defaults to `member`)
-- [ ] Invalid emails flagged in preview, excluded from submission
-- [ ] Preview shows valid row count before submitting
-- [ ] Invitations sent sequentially with correct `expiresIn` from org settings (Task 6.7)
-- [ ] Results summary shown after submission (success count + failures with reasons)
-- [ ] "Bulk Invite" button visible in the Invitations tab (admin/owner only)
+- [x] `BulkInviteDialog` component exists
+- [x] Accepts CSV via paste (textarea) and file upload
+- [x] Parses email (required), name (optional), role (optional, defaults to `member`)
+- [x] Team column (optional) — resolved to `teamId` by name; unresolved names warned in preview, omitted from invite call
+- [x] Supports both `,` and `;` as delimiters (auto-detected)
+- [x] Invalid emails flagged in preview, excluded from submission
+- [x] Preview shows valid row count before submitting
+- [x] Invitations sent sequentially with correct `expiresIn` from org settings (Task 6.7)
+- [x] Results summary shown after submission (success count + failures with reasons)
+- [x] "Bulk Invite" button visible in the Invitations tab
 
-**Definition of Done**: Admins can import a CSV and send bulk invitations in one action.
+**Definition of Done**: ✅ Admins can import a CSV (comma or semicolon separated) with email, name, role, and team columns and send bulk invitations in one action.
 
 ---
 

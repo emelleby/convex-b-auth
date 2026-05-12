@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Building2, Mail, Settings, UserCog, Users } from 'lucide-react'
 import { z } from 'zod'
+import BulkInviteDialog from '@/components/organization/BulkInviteDialog'
 import InviteMemberDialog from '@/components/organization/InviteMemberDialog'
 import JoinRequestsAdmin from '@/components/organization/JoinRequestsAdmin'
 import MembersList from '@/components/organization/MembersList'
@@ -144,7 +145,10 @@ function OrganizationPage() {
 								<CardTitle>Invitations</CardTitle>
 								<CardDescription>Manage sent invitations</CardDescription>
 							</div>
-							<InviteMemberDialog />
+							<div className="flex items-center gap-2">
+								<BulkInviteDialog />
+								<InviteMemberDialog />
+							</div>
 						</CardHeader>
 						<CardContent>
 							<PendingInvitationsList />
