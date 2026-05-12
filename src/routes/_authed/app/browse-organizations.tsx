@@ -1,29 +1,32 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
-import { Building2, Search, Users } from 'lucide-react'
-import { useQuery } from 'convex/react'
-import { api } from '../../../../convex/_generated/api'
+import { useMutation, useQuery } from 'convex/react'
+import { Building2, Search, Users, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import JoinRequestDialog from '@/components/organization/JoinRequestDialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardFooter,
 	CardHeader,
-	CardTitle,
+	CardTitle
 } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import JoinRequestDialog from '@/components/organization/JoinRequestDialog'
+import { api } from '../../../../convex/_generated/api'
 
 export const Route = createFileRoute('/_authed/app/browse-organizations')({
-	component: BrowseOrganizationsPage,
+	component: BrowseOrganizationsPage
 })
 
 function BrowseOrganizationsPage() {
 	const [searchQuery, setSearchQuery] = useState('')
 	const [debouncedQuery, setDebouncedQuery] = useState('')
 	const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
+	const [cancellingRequestId, setCancellingRequestId] = useState<string | null>(
+		null
+	)
 
 	// Debounce with cleanup to avoid stale timers
 	useEffect(() => {
@@ -33,15 +36,32 @@ function BrowseOrganizationsPage() {
 
 	const organizations = useQuery(api.orgDiscovery.searchPublicOrganizations, {
 		query: debouncedQuery || undefined,
-		limit: 20,
+		limit: 20
 	})
 
 	const myJoinRequests = useQuery(api.joinRequests.listMyJoinRequests)
+	const cancelJoinRequest = useMutation(api.joinRequests.cancelJoinRequest)
+
+	const getPendingRequestForOrg = (orgId: string) =>
+		myJoinRequests?.find(
+			(req) => req.organizationId === orgId && req.status === 'pending'
+		)
 
 	const hasPendingRequest = (orgId: string) =>
 		myJoinRequests?.some(
 			(req) => req.organizationId === orgId && req.status === 'pending'
 		) ?? false
+
+	const handleCancelRequest = async (requestId: string) => {
+		try {
+			setCancellingRequestId(requestId)
+			await cancelJoinRequest({ requestId })
+		} catch (err) {
+			console.error('Failed to cancel request:', err)
+		} finally {
+			setCancellingRequestId(null)
+		}
+	}
 
 	const selectedOrg = organizations?.find((o) => o.id === selectedOrgId)
 
@@ -100,7 +120,9 @@ function BrowseOrganizationsPage() {
 										</div>
 									)}
 									<div className="min-w-0">
-										<CardTitle className="text-lg truncate">{org.name}</CardTitle>
+										<CardTitle className="text-lg truncate">
+											{org.name}
+										</CardTitle>
 										<CardDescription>@{org.slug}</CardDescription>
 									</div>
 								</div>
@@ -113,8 +135,23 @@ function BrowseOrganizationsPage() {
 							</CardContent>
 							<CardFooter>
 								{hasPendingRequest(org.id) ? (
-									<Button variant="outline" disabled className="w-full">
-										Request Pending
+									<Button
+										variant="outline"
+										size="sm"
+										className="w-full"
+										onClick={() => {
+											const pendingReq = getPendingRequestForOrg(org.id)
+											if (pendingReq) {
+												handleCancelRequest(pendingReq.id)
+											}
+										}}
+										disabled={
+											cancellingRequestId ===
+											getPendingRequestForOrg(org.id)?.id
+										}
+									>
+										<X className="h-4 w-4 mr-2" />
+										Cancel Request
 									</Button>
 								) : (
 									<Button

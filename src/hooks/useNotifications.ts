@@ -30,6 +30,12 @@ export function useNotifications() {
 		isAuthenticated ? {} : 'skip'
 	)
 
+	// Unread in-app notifications (join request outcomes etc.)
+	const myNotifications = useQuery(
+		api.notifications.listForUser,
+		isAuthenticated ? {} : 'skip'
+	)
+
 	// For admins: pending join requests to review.
 	// `user` from useConvexAuthReady is sourced from the BA session — same data,
 	// but already gated on Convex JWT readiness.
@@ -46,23 +52,28 @@ export function useNotifications() {
 	// Computed values
 	const invitationCount = pendingInvitations?.length ?? 0
 	const joinRequestsToReviewCount = pendingJoinRequestsToReview?.length ?? 0
-	const unreadCount = invitationCount + joinRequestsToReviewCount
+	const notificationCount = myNotifications?.filter((n) => !n.read).length ?? 0
+	const unreadCount =
+		invitationCount + joinRequestsToReviewCount + notificationCount
 
 	// Loading state
 	const isLoading =
 		pendingInvitations === undefined ||
 		myJoinRequests === undefined ||
+		myNotifications === undefined ||
 		(isAdmin && pendingJoinRequestsToReview === undefined)
 
 	return {
 		// Data
 		pendingInvitations: pendingInvitations ?? [],
 		myJoinRequests: myJoinRequests ?? [],
+		myNotifications: myNotifications ?? [],
 		pendingJoinRequestsToReview: pendingJoinRequestsToReview ?? [],
 
 		// Counts
 		invitationCount,
 		joinRequestsToReviewCount,
+		notificationCount,
 		unreadCount,
 
 		// State
@@ -93,12 +104,21 @@ export function useNotificationCount() {
 		isAdmin && activeOrg?.id ? { organizationId: activeOrg.id } : 'skip'
 	)
 
-	const count = (invitationCount ?? 0) + (joinRequestCount ?? 0)
+	const myNotifications = useQuery(
+		api.notifications.listForUser,
+		isAuthenticated ? {} : 'skip'
+	)
+
+	const count =
+		(invitationCount ?? 0) +
+		(joinRequestCount ?? 0) +
+		(myNotifications?.filter((n) => !n.read).length ?? 0)
 
 	return {
 		count,
 		isLoading:
 			invitationCount === undefined ||
+			myNotifications === undefined ||
 			(isAdmin && joinRequestCount === undefined)
 	}
 }

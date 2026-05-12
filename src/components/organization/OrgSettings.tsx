@@ -1,8 +1,10 @@
 'use client'
 
 import { useNavigate } from '@tanstack/react-router'
-import { AlertTriangle, Save } from 'lucide-react'
+import { useMutation, useQuery } from 'convex/react'
+import { AlertTriangle, CalendarClock, Save } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
 	Card,
@@ -21,7 +23,15 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue
+} from '@/components/ui/select'
 import { authClient } from '@/lib/auth-client'
+import { api } from '../../../convex/_generated/api'
 
 export default function OrgSettings() {
 	const navigate = useNavigate()
@@ -37,6 +47,12 @@ export default function OrgSettings() {
 	const [error, setError] = useState<string | null>(null)
 	const [success, setSuccess] = useState<string | null>(null)
 
+	// Invitation settings state
+	const [invitationValidityDays, setInvitationValidityDays] =
+		useState<number>(365)
+	const [isSavingInvitationSettings, setIsSavingInvitationSettings] =
+		useState(false)
+
 	// Update local state when activeOrg changes
 	useEffect(() => {
 		if (activeOrg) {
@@ -45,9 +61,30 @@ export default function OrgSettings() {
 		}
 	}, [activeOrg])
 
+	// Fetch org settings
+	const orgSettings = useQuery(
+		api.orgSettings.getSettings,
+		activeOrg?.id ? { organizationId: activeOrg.id } : 'skip'
+	)
+
+	useEffect(() => {
+		if (orgSettings) {
+			setInvitationValidityDays(orgSettings.invitationValidityDays)
+		}
+	}, [orgSettings])
+
+	const upsertSettings = useMutation(api.orgSettings.upsertSettings)
+
 	// Check if current user is owner
 	const isOwner = activeOrg?.members?.some(
 		(m) => m.userId === session?.user?.id && m.role === 'owner'
+	)
+
+	// Check if current user is admin or owner
+	const isAdminOrOwner = activeOrg?.members?.some(
+		(m) =>
+			m.userId === session?.user?.id &&
+			(m.role === 'owner' || m.role === 'admin')
 	)
 
 	const handleSave = async () => {
@@ -161,6 +198,76 @@ export default function OrgSettings() {
 					</Button>
 				</CardContent>
 			</Card>
+
+			{/* Invitation Settings - Admin/Owner only */}
+			{isAdminOrOwner && (
+				<Card>
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2">
+							<CalendarClock className="h-5 w-5" />
+							Invitation Settings
+						</CardTitle>
+						<CardDescription>
+							Configure how long pending invitations remain valid
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<div className="space-y-2">
+							<Label htmlFor="invitation-validity">
+								Invitation Validity Period
+							</Label>
+							<Select
+								value={String(invitationValidityDays)}
+								onValueChange={(value) =>
+									setInvitationValidityDays(Number(value))
+								}
+								disabled={isSavingInvitationSettings}
+							>
+								<SelectTrigger id="invitation-validity" className="w-full">
+									<SelectValue placeholder="Select validity period" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="7">7 days</SelectItem>
+									<SelectItem value="30">30 days</SelectItem>
+									<SelectItem value="90">90 days</SelectItem>
+									<SelectItem value="180">180 days</SelectItem>
+									<SelectItem value="365">1 year</SelectItem>
+									<SelectItem value="99999">Never expire</SelectItem>
+								</SelectContent>
+							</Select>
+							<p className="text-xs text-muted-foreground">
+								Pending invitations will expire after this period. New
+								invitations will use this setting.
+							</p>
+						</div>
+						<Button
+							onClick={async () => {
+								if (!activeOrg) return
+								try {
+									setIsSavingInvitationSettings(true)
+									await upsertSettings({
+										organizationId: activeOrg.id,
+										invitationValidityDays
+									})
+									toast.success('Invitation settings saved successfully!')
+								} catch (err) {
+									toast.error(
+										err instanceof Error
+											? err.message
+											: 'Failed to save invitation settings'
+									)
+								} finally {
+									setIsSavingInvitationSettings(false)
+								}
+							}}
+							disabled={isSavingInvitationSettings}
+						>
+							<Save className="h-4 w-4 mr-2" />
+							{isSavingInvitationSettings ? 'Saving...' : 'Save Changes'}
+						</Button>
+					</CardContent>
+				</Card>
+			)}
 
 			{/* Danger Zone - Only for owners */}
 			{isOwner && (

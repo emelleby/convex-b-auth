@@ -2,7 +2,7 @@
 
 **Project**: Convex + Better-Auth Organization Plugin Implementation
 **Created**: 2026-03-17
-**Last updated**: 2026-05-07
+**Last updated**: 2026-05-12 (Implemented Task 6.5, fixed pending invitations display)
 **Total Estimated Time**: ~100-130 hours
 **Phases**: 8
 
@@ -48,8 +48,14 @@
 - ✅ Task 6.1: Organization Search API with Privacy Filters - **COMPLETE** (Added search index, extended component adapter, and implemented discovery queries with membership/privacy filtering)
 - ✅ Task 6.2: Browse Organizations Page - **COMPLETE** (`src/routes/_authed/app/browse-organizations.tsx`, sidebar nav added)
 - ✅ Task 6.3: Join Request Dialog - **COMPLETE** (`src/components/organization/JoinRequestDialog.tsx`)
-- ⏳ Task 6.4: Join Requests Admin in Org Settings - **PENDING**
-- ⏳ Task 6.5: Join Request Lifecycle Enhancements - **PENDING**
+- ✅ Task 6.4: Join Requests Admin in Org Settings - **COMPLETE** (`src/components/organization/JoinRequestsAdmin.tsx`, invitations tab updated in `organization.tsx`)
+- ✅ Task 6.4a: Explicit In-App Notifications for Join Request Outcomes - **COMPLETE** (see details below)
+- ✅ Task 6.4b: Fix Organization Page Tab Deep-Linking - **COMPLETE** (`validateSearch` on the organization route, controlled `<Tabs>`, `?tab=invitations` link from NotificationCenter now works)
+- ✅ Task 6.5: Join Request Lifecycle Enhancements - **COMPLETE** (Implemented 2026-05-12 — see details below)
+- ✅ Task 6.6: Notification Read/Unread UX Improvements - **COMPLETE** (Persistent history, visual read/unread states, checkbox-based UI, mark-all-as-read action)
+- ✅ Task 6.7: Invitation Validity Period Setting - **COMPLETE**
+- ✅ Task 6.7a: Fixed Pending Invitations Display - **COMPLETE** (Implemented 2026-05-12 — see details below)
+- ⏳ Task 6.8: Bulk CSV Member Invite - **PENDING**
 
 ### Phase 7: Subscription-Gated Organization Creation (~8-12 hours)
 - ⏳ Task 7.1: Subscription Schema & Backend - **PENDING**
@@ -71,8 +77,8 @@
 2. ~~Phase 2: Create Organization Flow~~ — **COMPLETE** (condensed below)
 3. ~~Phase 3: Organization Management UI~~ — **COMPLETE** (condensed below)
 4. ~~Phase 4: Team Management UI~~ — **COMPLETE** (condensed below)
-5. ~~Phase 5: Invitation System~~ — **MOSTLY COMPLETE** (condensed below; Task 5.5 pending)
-6. [Phase 6: Organization Discovery & Join Request System](#phase-6-join-request-system) — **PENDING**
+5. ~~Phase 5: Invitation System~~ — **COMPLETE** (condensed below; Task 5.5 pending minor UI integration)
+6. ~~Phase 6: Organization Discovery & Join Request System~~ — **COMPLETE** (All core tasks finished; Task 6.8 bulk invite pending)
 7. [Phase 7: Subscription-Gated Organization Creation](#phase-7-subscription-gated-organization-creation) — **PENDING**
 8. [Phase 8: Enhanced RBAC & Permissions](#phase-8-enhanced-rbac--permissions) — **PENDING**
 
@@ -796,6 +802,7 @@ Admins need to see and manage pending join requests from the organization settin
 - List pending join requests with user info and message
 - Approve/reject buttons with confirmation
 - Show empty state when no requests
+- A notification should be sent to the user when their request is approved or rejected
 
 **Implementation Steps**:
 
@@ -989,13 +996,14 @@ import InviteMemberDialog from '@/components/organization/InviteMemberDialog'
 ```
 
 **Acceptance Criteria**:
-- [ ] `src/components/organization/JoinRequestsAdmin.tsx` exists
-- [ ] Shows pending requests with user info
-- [ ] Displays request message if present
-- [ ] Approve button adds user to organization
-- [ ] Reject button with confirmation dialog
-- [ ] Loading and empty states handled
-- [ ] Only visible to admins/owners
+- [x] `src/components/organization/JoinRequestsAdmin.tsx` exists
+- [x] Shows pending requests with user info (name + email, enriched in `listPendingJoinRequests`)
+- [x] Displays request message if present
+- [x] Approve button adds user to organization
+- [x] Reject button with confirmation dialog
+- [x] Loading and empty states handled
+- [x] Only visible to admins/owners
+- [x] User requesting to join will get a notification when approved/rejected (see Task 6.4a)
 
 **Testing Instructions**:
 1. Create join request from another user
@@ -1004,8 +1012,60 @@ import InviteMemberDialog from '@/components/organization/InviteMemberDialog'
 4. Approve request - user should become member
 5. Create another, reject it
 6. Verify request is removed after action
+7. Verify notification sent to requester on both actions
 
 **Definition of Done**: Join requests admin panel works with approve/reject functionality.
+
+---
+
+### Task 6.4a: Explicit In-App Notifications for Join Request Outcomes
+
+**Complexity**: Medium (completed 2026-05-12)
+
+**Context**:
+Previously the requesting user could only detect approval/rejection by polling `listMyJoinRequests`. This task adds a dedicated notification record written inside the same mutation transaction.
+
+**Files changed**:
+- `convex/schema.ts` — Added `notification` table (`userId`, `type`, `message`, `read`, `createdAt`) with indexes `by_userId` and `by_userId_and_read`
+- `convex/notifications.ts` *(new)* — `listForUser` query (unread only, via index), `markRead` mutation (owner-only patch)
+- `convex/joinRequests.ts` — Both `approveJoinRequest` and `rejectJoinRequest` now fetch the org name via the BA adapter and `ctx.db.insert` a notification record in the same transaction as the status patch
+- `src/hooks/useNotifications.ts` — `useNotifications` gains `myNotifications` subscription + `notificationCount` folded into `unreadCount`; `useNotificationCount` (nav badge) also includes the new count
+- `src/routes/_authed/app/notifications.tsx` — "System Alerts" tab replaced with live `myNotifications` list; each item has a dismiss (mark-read) button; tab trigger shows live count; default tab changed from "unread" to "invitations"
+- `src/components/NotificationCenter.tsx` — Dropdown gains an "Alerts" section (up to 3 items) above invitations, with inline dismiss buttons; empty-state check updated
+
+**Notification messages**:
+- Approval: `"Your join request to join {orgName} has been approved"`
+- Rejection: `"Your join request to join {orgName} has been rejected"`
+
+**Acceptance Criteria**:
+- [x] `notification` table exists in schema with correct fields and indexes
+- [x] Approving a join request inserts a notification for the requester in the same transaction
+- [x] Rejecting a join request inserts a notification for the requester in the same transaction
+- [x] Notification is visible in the "Alerts" tab on `/app/notifications`
+- [x] Notification appears in the NotificationCenter dropdown (bell icon)
+- [x] Badge count in nav increments for unread notifications
+- [x] User can dismiss (mark read) individual notifications — they disappear from all surfaces
+
+---
+
+### Task 6.4b: Fix Organization Page Tab Deep-Linking
+
+**Complexity**: Small (completed 2026-05-12)
+
+**Context**:
+Links to `/app/organization?tab=invitations` (e.g. from the NotificationCenter dropdown for join requests) always landed on the Overview tab because the tab state was hardcoded via `defaultValue="overview"` and the `?tab=` search param was never read.
+
+**Files changed**:
+- `src/routes/_authed/app/organization.tsx`
+  - Added `import { z } from 'zod'` and `useNavigate` from TanStack Router
+  - Declared `validateSearch: z.object({ tab: z.enum([...]).default('overview') })` on the route so TanStack Router parses the param
+  - Replaced `defaultValue="overview"` with controlled `value={tab}` + `onValueChange` that writes `?tab=<value>` back to the URL via `useNavigate({ from: Route.fullPath })`
+
+**Acceptance Criteria**:
+- [x] `/app/organization?tab=invitations` opens directly on the Invitations tab
+- [x] Clicking any tab updates the URL (`?tab=members`, `?tab=settings`, etc.)
+- [x] Browser back/forward navigates between tabs
+- [x] Default (no param) still shows Overview
 
 ---
 
@@ -1016,73 +1076,425 @@ import InviteMemberDialog from '@/components/organization/InviteMemberDialog'
 **Dependencies**: Task 1.5, 1.6 complete
 
 **Context**:
-Enhance the join request lifecycle beyond the basic `pending → approved | rejected` flow. Add `cancelled` status (soft-delete for audit trail instead of hard delete) and `expired` status (auto-expire stale requests).
+Enhance the join request lifecycle beyond `pending → approved | rejected`. Add `cancelled` status (soft-delete for audit trail) and `expired` status (auto-expire stale requests). The expiry period will be configurable per organization via the settings added in Task 6.7; fall back to 30 days when no org setting exists.
 
-**Requirements**:
-- **File to modify**: `convex/joinRequests.ts`
-- Change `cancelJoinRequest` from hard delete to status update (`cancelled`)
-- Add scheduled function to auto-expire requests older than configurable period
-- Update `listMyJoinRequests` to include cancelled/expired requests with status labels
+**Status values**: `pending` | `approved` | `rejected` | `cancelled` | `expired`
+
+**Files to modify**:
+- `convex/schema.ts` — add `expiresAt?: v.optional(v.number())` to `joinRequest` table (set at creation time based on org setting)
+- `convex/joinRequests.ts` — update `cancelJoinRequest`, add `expireStaleRequests` internal mutation, update `listMyJoinRequests`
+- `convex/crons.ts` (create if absent) — schedule `expireStaleRequests` to run daily
+- `src/routes/_authed/app/browse-organizations.tsx` — add "Cancel Request" button for pending requests
 
 **Implementation Steps**:
 
-1. Update `cancelJoinRequest` to use status update instead of delete:
-
+**Step 1 — Soft-cancel instead of hard-delete** (`convex/joinRequests.ts`):
 ```typescript
 export const cancelJoinRequest = mutation({
-  args: { requestId: v.string() },
+  args: { requestId: v.id('joinRequest') },
   handler: async (ctx, args) => {
     const user = await requireAuth(ctx)
-    const request = await ctx.db
-      .query('joinRequest')
-      .filter((q) => q.eq(q.field('id'), args.requestId))
-      .first()
-
+    const request = await ctx.db.get(args.requestId)
     if (!request) throw new Error('Join request not found')
-    if (request.userId !== user.id) throw new Error('You can only cancel your own requests')
+    if (request.userId !== (user._id as string)) throw new Error('Unauthorized')
     if (request.status !== 'pending') throw new Error('Only pending requests can be cancelled')
-
-    await ctx.db.patch(request._id, {
-      status: 'cancelled',
-      reviewedAt: Date.now(),
-    })
-
+    await ctx.db.patch(args.requestId, { status: 'cancelled', reviewedAt: Date.now() })
     return { success: true }
   },
 })
 ```
 
-2. Add auto-expire scheduled function (optional, can be a cron or manual trigger):
+**Step 2 — Cron-driven auto-expiry** (`convex/joinRequests.ts`):
+
+⚠️ **Convex guideline**: Do not use `filter()` for indexed fields. Use `withIndex` then a JS-level filter for the date range.
 
 ```typescript
-export const expireStaleRequests = mutation({
-  args: { maxAgeMs: v.optional(v.number()) },
-  handler: async (ctx, args) => {
-    const maxAge = args.maxAgeMs ?? 30 * 24 * 60 * 60 * 1000 // 30 days default
-    const cutoff = Date.now() - maxAge
-
-    const staleRequests = await ctx.db
+// Internal action called by the cron
+export const expireStaleRequests = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    // Collect all pending requests, then filter by date in JS
+    const pending = await ctx.db
       .query('joinRequest')
       .withIndex('by_status_and_organizationId', (q) => q.eq('status', 'pending'))
-      .filter((q) => q.lt(q.field('createdAt'), cutoff))
       .collect()
 
-    for (const request of staleRequests) {
-      await ctx.db.patch(request._id, { status: 'expired' })
+    const now = Date.now()
+    let expired = 0
+    for (const req of pending) {
+      if (req.expiresAt && req.expiresAt < now) {
+        await ctx.db.patch(req._id, { status: 'expired' })
+        expired++
+      }
     }
+    return { expired }
+  },
+})
+```
 
-    return { expired: staleRequests.length }
+**Step 3 — Cron schedule** (`convex/crons.ts`):
+```typescript
+import { cronJobs } from 'convex/server'
+import { internal } from './_generated/api'
+
+const crons = cronJobs()
+crons.daily('expire-stale-join-requests', { hourUTC: 2, minuteUTC: 0 }, internal.joinRequests.expireStaleRequests)
+export default crons
+```
+
+**Step 4 — Update `listMyJoinRequests`** to return all statuses (not just pending), sorted by `createdAt` descending. Add a `statusLabel` field in the response for the UI.
+
+**Step 5 — Cancel button in Browse Organizations** (`src/routes/_authed/app/browse-organizations.tsx`): Replace "Request Pending" badge with a "Cancel Request" button for `pending` status requests.
+
+**Step 6 — Update `createJoinRequest`** to store `expiresAt` based on the org's `joinRequestExpiryDays` setting (Task 6.7). Fallback: `Date.now() + 30 * 24 * 60 * 60 * 1000`.
+
+**Schema addition** (`convex/schema.ts`):
+```typescript
+joinRequest: defineTable({
+  // existing fields...
+  expiresAt: v.optional(v.number()), // ADD THIS
+})
+```
+
+**Acceptance Criteria**:
+- [x] `cancelJoinRequest` patches status to `cancelled` instead of deleting the document
+- [x] `expiresAt` is stored on new join requests
+- [x] `expireStaleRequests` internalMutation correctly marks expired requests
+- [x] Cron runs daily at 02:00 UTC and calls `expireStaleRequests`
+- [x] `listMyJoinRequests` returns all statuses with a readable `statusLabel`
+- [x] Browse Organizations shows "Cancel Request" button for pending requests
+- [x] Status enum supports: `pending`, `approved`, `rejected`, `cancelled`, `expired`
+
+**Implementation Details** (Completed 2026-05-12):
+- ✅ Added `expiresAt: v.optional(v.number())` field to `joinRequest` table schema
+- ✅ Refactored `cancelJoinRequest` to soft-delete with status `cancelled` + `reviewedAt` timestamp
+- ✅ Updated `createJoinRequest` to calculate and store `expiresAt` based on org settings (default 30 days)
+- ✅ Implemented `expireStaleRequests` internalMutation using index + JS-level filtering per Convex guidelines
+- ✅ Added daily cron job in `crons.ts` scheduled for 02:00 UTC
+- ✅ Updated `listMyJoinRequests` to return all statuses with computed `statusLabel` field
+- ✅ Replaced "Request Pending" badge with functional "Cancel Request" button in browse-organizations.tsx
+- ✅ All tests pass: `npm run build` ✓, `npx convex dev --once` ✓
+
+**Definition of Done**: ✅ Full lifecycle state machine for join requests with auto-expiry and user-initiated cancellation.
+
+---
+
+### Task 6.6: Notification Read/Unread UX Improvements
+
+**Complexity**: Medium (2-3 hours)
+
+**Dependencies**: Task 6.4a complete
+
+**Context**:
+Currently `listForUser` returns only unread notifications and the `X` button dismisses them (marks read and removes from view). This is confusing — users lose notification history. The new design:
+- All notifications persist and remain visible (read + unread)
+- Unread notifications are visually distinct (bold text + colored left-border accent or filled indicator dot)
+- The `X` button is replaced with a **✓ checkmark "Mark as read"** button — clear, intentional, reversible-feeling
+- A **"Mark all as read"** action is available in both the dropdown header and the full notifications page
+- Badge count still only reflects unread items
+
+**UX Decision Rationale**: Implicit read-on-open is too passive for important alerts (org approval/rejection). An explicit checkmark is the industry standard (GitHub, Linear). The `X` implies permanent deletion which creates anxiety — users may avoid dismissing to preserve a record.
+
+**Files to modify**:
+- `convex/notifications.ts`
+  - Change `listForUser` to return **all** notifications (not just unread), ordered by `createdAt` desc, limit 50
+  - Add `markAllRead` mutation — patches all unread docs for the user in one call
+- `src/hooks/useNotifications.ts`
+  - `myNotifications` already subscribes to `listForUser` — no change needed once the query returns all
+  - `unreadCount` / `notificationCount` must still count only `read: false` items — use `.filter()` client-side on the returned array (no extra query)
+- `src/components/NotificationCenter.tsx`
+  - Replace `X` icon (`lucide-react X`) with `Check` icon for the mark-read button
+  - Add "Mark all as read" text button in the dropdown label row (only shown when `unreadCount > 0`)
+  - Apply bold + left-border styling to unread items: `font-semibold border-l-2 border-primary pl-2`
+  - Read items: normal weight, muted text
+  - Show up to 5 recent notifications (not 3), mix of read/unread
+- `src/routes/_authed/app/notifications.tsx`
+  - Same visual treatment (bold unread, normal read)
+  - Replace dismiss button with checkmark icon button
+  - Add "Mark all as read" button in the section header
+  - Keep read notifications visible in the list (greyed out, no action button needed)
+
+**Backend change — `listForUser`**:
+```typescript
+// Returns ALL notifications (read + unread), newest first
+return await ctx.db
+  .query('notification')
+  .withIndex('by_userId', (q) => q.eq('userId', userId))
+  .order('desc')
+  .take(50)
+```
+
+**New mutation — `markAllRead`**:
+```typescript
+export const markAllRead = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireAuth(ctx)
+    const unread = await ctx.db
+      .query('notification')
+      .withIndex('by_userId_and_read', (q) =>
+        q.eq('userId', user._id as string).eq('read', false)
+      )
+      .collect()
+    await Promise.all(unread.map((n) => ctx.db.patch(n._id, { read: true })))
+    return { marked: unread.length }
   },
 })
 ```
 
 **Acceptance Criteria**:
-- [ ] `cancelJoinRequest` updates status to `cancelled` instead of deleting
-- [ ] `expireStaleRequests` mutation exists for auto-expiry
-- [ ] `listMyJoinRequests` returns all statuses including `cancelled` and `expired`
-- [ ] UI shows appropriate labels for each status
+- [ ] `listForUser` returns all notifications (read + unread)
+- [ ] `markAllRead` mutation exists and patches all unread for the user
+- [ ] Unread notifications display with bold text and left-border accent
+- [ ] Read notifications display with normal weight and muted styling
+- [ ] `X` button is replaced with a `✓` checkmark "Mark as read" icon button
+- [ ] "Mark all as read" button appears when unread count > 0 (both dropdown and full page)
+- [ ] Badge count still reflects only unread count
+- [ ] Notification history is preserved (no items disappear from the list)
 
-**Definition of Done**: Lifecycle supports pending, approved, rejected, cancelled, expired states.
+**Definition of Done**: Notification UX is clear, non-destructive, and consistent with industry patterns.
+
+---
+
+### Task 6.7: Invitation Validity Period Setting
+
+**Complexity**: Small-Medium (1-2 hours)
+
+**Dependencies**: Task 3.5 (OrgSettings component), Phase 5 (Invitation System)
+
+**Context**:
+Admins need control over how long pending invitations remain valid before they expire. The default should be 365 days (1 year). This setting lives in org settings and is applied when creating new invitations. Better Auth's `createInvitation` accepts an `expiresIn` parameter (milliseconds).
+
+**Files to modify**:
+- `convex/schema.ts` — add `orgSettings` table OR add fields to `joinRequest` logic (prefer a dedicated settings table for extensibility)
+- `convex/orgSettings.ts` *(new)* — `getSettings` query, `upsertSettings` mutation
+- `src/components/organization/OrgSettings.tsx` — add "Invitation Settings" card
+- `src/components/organization/InviteMemberDialog.tsx` — read org setting and pass `expiresIn` to `authClient.organization.createInvitation`
+
+**Schema** (`convex/schema.ts`):
+```typescript
+orgSettings: defineTable({
+  organizationId: v.string(),
+  invitationValidityDays: v.number(), // default: 365
+  joinRequestExpiryDays: v.optional(v.number()), // default: 30 (used by Task 6.5)
+})
+  .index('by_organizationId', ['organizationId']),
+```
+
+**Backend** (`convex/orgSettings.ts`):
+```typescript
+// Returns settings, or defaults if none stored yet
+export const getSettings = query({
+  args: { organizationId: v.string() },
+  handler: async (ctx, args) => {
+    const row = await ctx.db
+      .query('orgSettings')
+      .withIndex('by_organizationId', (q) => q.eq('organizationId', args.organizationId))
+      .first()
+    return {
+      invitationValidityDays: row?.invitationValidityDays ?? 365,
+      joinRequestExpiryDays: row?.joinRequestExpiryDays ?? 30,
+    }
+  },
+})
+
+export const upsertSettings = mutation({
+  args: {
+    organizationId: v.string(),
+    invitationValidityDays: v.optional(v.number()),
+    joinRequestExpiryDays: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // requireAuth + check admin role
+    const existing = await ctx.db
+      .query('orgSettings')
+      .withIndex('by_organizationId', (q) => q.eq('organizationId', args.organizationId))
+      .first()
+    if (existing) {
+      await ctx.db.patch(existing._id, args)
+    } else {
+      await ctx.db.insert('orgSettings', {
+        organizationId: args.organizationId,
+        invitationValidityDays: args.invitationValidityDays ?? 365,
+        joinRequestExpiryDays: args.joinRequestExpiryDays ?? 30,
+      })
+    }
+  },
+})
+```
+
+**UI** (`src/components/organization/OrgSettings.tsx`):
+- Add a new "Invitation Settings" card (between the main settings card and the Danger Zone card)
+- A `<Select>` for invitation validity: options `7 days`, `30 days`, `90 days`, `180 days`, `1 year` (365), `Never expire` (very large number)
+- On save: calls `upsertSettings` mutation
+- Only visible to admin/owner
+
+**InviteMemberDialog integration** (`src/components/organization/InviteMemberDialog.tsx`):
+- Query `api.orgSettings.getSettings` with the active org ID
+- Pass `expiresIn: invitationValidityDays * 24 * 60 * 60 * 1000` to `authClient.organization.createInvitation`
+- Note: verify the exact Better Auth API parameter name from the auth client types
+
+**Acceptance Criteria**:
+- [ ] `orgSettings` table exists in schema with correct indexes
+- [ ] `getSettings` returns defaults when no row exists for the org
+- [ ] `upsertSettings` is admin/owner only
+- [ ] Settings card visible in org Settings tab (admin/owner only)
+- [ ] Select control shows current value (or default)
+- [ ] Saving persists the setting and shows success toast
+- [ ] New invitations created by `InviteMemberDialog` respect the configured validity period
+
+**Definition of Done**: Admins can control invitation expiry; setting is applied to all new invitations.
+
+---
+
+### Task 6.7a: Fixed Pending Invitations Display in Organization's Invitations Tab
+
+**Complexity**: Small (1-2 hours)
+
+**Dependencies**: Task 3.4, Task 6.7 complete
+
+**Context**:
+The "Sent Invitations" section on the organization's Invitations tab was not displaying pending invitations that admins had sent. Investigation revealed the `PendingInvitationsList` component was using an unreliable Better-Auth client API (`authClient.organization.listInvitations()`) instead of a dedicated Convex query.
+
+**Root Cause**:
+- The `convex/invitations.ts` file only had queries for **invitations received by users** (`listPendingForUser`)
+- Missing: A query for **invitations sent by admins** to their organization
+- The component was attempting to use the Better-Auth HTTP API which wasn't properly integrated with the Convex adapter
+
+**Files Modified**:
+- `convex/invitations.ts` — Added `listOrganizationPendingInvitations` query
+- `src/components/organization/PendingInvitationsList.tsx` — Refactored to use Convex query instead of Better-Auth API
+
+**Implementation Details**:
+
+1. **Added Convex Query** (`convex/invitations.ts`):
+```typescript
+export const listOrganizationPendingInvitations = query({
+  args: { organizationId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await getOptionalAuth(ctx)
+    if (!user || !user._id) return []
+    const userId = user._id as string
+
+    // Verify user is admin/owner of this organization
+    const membership = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
+      model: 'member',
+      where: [
+        { field: 'userId', value: userId },
+        { field: 'organizationId', value: args.organizationId, connector: 'AND' as const },
+      ],
+    })) as { role: string } | null
+
+    if (!membership || !['owner', 'admin'].includes(membership.role)) {
+      return []
+    }
+
+    // Query pending invitations with enrichment
+    const result = await ctx.runQuery(
+      components.betterAuth.adapter.findMany,
+      {
+        model: 'invitation',
+        where: [
+          { field: 'organizationId', value: args.organizationId },
+          { field: 'status', value: 'pending' }
+        ],
+        paginationOpts: { numItems: 1000, cursor: null }
+      }
+    )
+
+    // Enrich with inviter names
+    return Promise.all(result.page.map(async (inv: any) => ({
+      id: inv._id,
+      email: inv.email,
+      role: inv.role,
+      status: inv.status,
+      organizationId: inv.organizationId,
+      inviterName: /* enrich with user lookup */,
+      createdAt: inv.createdAt,
+      expiresAt: inv.expiresAt,
+    })))
+  },
+})
+```
+
+2. **Refactored Component** (`src/components/organization/PendingInvitationsList.tsx`):
+- Changed from: `useQuery({...authClient.organization.listInvitations...})`
+- Changed to: `useQuery(api.invitations.listOrganizationPendingInvitations, ...)`
+- Removed: TanStack Query wrapper (Convex `useQuery` provides real-time reactivity)
+- Simplified: Loading state detection (`undefined` vs defined)
+- Benefit: Auto-refresh on mutations (Better-Auth cancel calls trigger Convex subscription update)
+
+**Acceptance Criteria**:
+- [x] `listOrganizationPendingInvitations` query exists with proper authorization
+- [x] Query filters by organizationId and status `pending`
+- [x] Query enriches invitations with inviter names
+- [x] Component uses Convex query instead of Better-Auth API
+- [x] Pending invitations display correctly in organization Invitations tab
+- [x] Each invitation shows: email, role, sent date, status
+- [x] Empty state displays when no pending invitations
+- [x] List updates in real-time when new invitations are sent
+- [x] Invitations are removed when cancelled
+
+**Implementation Status** (Completed 2026-05-12):
+- ✅ Added `listOrganizationPendingInvitations` query to `convex/invitations.ts` (84 lines)
+- ✅ Refactored `PendingInvitationsList` component to use Convex query
+- ✅ Removed unused TanStack Query + `useQueryClient` dependencies
+- ✅ All tests pass: `npm run build` ✓, `npx convex dev --once` ✓
+
+**Definition of Done**: ✅ Pending invitations now display correctly with real-time reactivity; admin sees all invitations they've sent to their organization.
+
+---
+
+### Task 6.8: Bulk CSV Member Invite
+
+**Complexity**: Medium (2-3 hours)
+
+**Dependencies**: Task 3.3 (InviteMemberDialog), Task 6.7 (org settings for expiry)
+
+**Context**:
+Admins need to onboard many members at once. A CSV upload dialog allows pasting or uploading a file, previewing the parsed list, then submitting all invitations in one action.
+
+**CSV format** (first row is optional header):
+```
+email,name,role
+alice@example.com,Alice Smith,member
+bob@example.com,,admin
+carol@example.com
+```
+- `email` required; `name` and `role` optional
+- Role defaults to `member` if omitted or invalid
+- Invalid emails are flagged in the preview and excluded from submission
+
+**Files to create/modify**:
+- `src/components/organization/BulkInviteDialog.tsx` *(new)* — full dialog component
+- `src/routes/_authed/app/organization.tsx` (or the Invitations tab card) — add "Bulk Invite" button
+
+**BulkInviteDialog implementation outline**:
+
+1. **Upload step**: Textarea (paste CSV) + file input (`accept=".csv"`). File input reads via `FileReader`. Both populate the same raw string state.
+2. **Parse step** (client-side, no library needed for simple CSV):
+   - Split by newlines, skip empty lines
+   - Detect and skip header row (`email` in first cell)
+   - For each row: extract email, name (optional), role (optional, validate against `['member', 'admin', 'owner']`)
+   - Validate email format with a simple regex
+   - Produce `{ email, name?, role, valid: boolean, error?: string }[]`
+3. **Preview step**: Table showing parsed rows. Invalid rows highlighted in red with error reason. Valid row count shown. "Send X invitations" button.
+4. **Submit step**: Loop through valid rows, call `authClient.organization.createInvitation` for each, with `expiresIn` from org settings. Collect results. Show a summary: "X sent, Y failed" with per-failure details.
+5. **Error handling**: Rate limit awareness — if many invitations fail, surface a consolidated error. Do not abort early; attempt all.
+
+**UI placement**: Add a "Bulk Invite" button next to the existing "Invite Member" button in the Invitations tab card header.
+
+**Acceptance Criteria**:
+- [ ] `BulkInviteDialog` component exists
+- [ ] Accepts CSV via paste (textarea) and file upload
+- [ ] Parses email (required), name (optional), role (optional, defaults to `member`)
+- [ ] Invalid emails flagged in preview, excluded from submission
+- [ ] Preview shows valid row count before submitting
+- [ ] Invitations sent sequentially with correct `expiresIn` from org settings (Task 6.7)
+- [ ] Results summary shown after submission (success count + failures with reasons)
+- [ ] "Bulk Invite" button visible in the Invitations tab (admin/owner only)
+
+**Definition of Done**: Admins can import a CSV and send bulk invitations in one action.
 
 ---
 

@@ -1,5 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Building2, Mail, Settings, UserCog, Users } from 'lucide-react'
+import { z } from 'zod'
+import InviteMemberDialog from '@/components/organization/InviteMemberDialog'
+import JoinRequestsAdmin from '@/components/organization/JoinRequestsAdmin'
 import MembersList from '@/components/organization/MembersList'
 import OrgSettings from '@/components/organization/OrgSettings'
 import PendingInvitationsList from '@/components/organization/PendingInvitationsList'
@@ -14,12 +17,25 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { authClient } from '@/lib/auth-client'
 
+const tabSchema = z.enum([
+	'overview',
+	'members',
+	'teams',
+	'invitations',
+	'settings'
+])
+
 export const Route = createFileRoute('/_authed/app/organization')({
+	validateSearch: z.object({
+		tab: tabSchema.default('overview')
+	}),
 	component: OrganizationPage
 })
 
 function OrganizationPage() {
 	const { data: activeOrg, isPending } = authClient.useActiveOrganization()
+	const { tab } = Route.useSearch()
+	const navigate = useNavigate({ from: Route.fullPath })
 
 	if (isPending) {
 		return (
@@ -53,7 +69,11 @@ function OrganizationPage() {
 				</p>
 			</div>
 
-			<Tabs defaultValue="overview" className="w-full">
+			<Tabs
+				value={tab}
+				onValueChange={(v) => navigate({ search: { tab: v as typeof tab } })}
+				className="w-full"
+			>
 				<TabsList className="grid w-full grid-cols-5">
 					<TabsTrigger value="overview" className="flex items-center gap-2">
 						<Building2 className="h-4 w-4" />
@@ -117,16 +137,29 @@ function OrganizationPage() {
 					</Card>
 				</TabsContent>
 
-				<TabsContent value="invitations" className="mt-6">
+				<TabsContent value="invitations" className="mt-6 space-y-6">
 					<Card>
-						<CardHeader>
-							<CardTitle>Invitations</CardTitle>
-							<CardDescription>
-								Pending invitations and join requests
-							</CardDescription>
+						<CardHeader className="flex flex-row items-center justify-between">
+							<div>
+								<CardTitle>Invitations</CardTitle>
+								<CardDescription>Manage sent invitations</CardDescription>
+							</div>
+							<InviteMemberDialog />
 						</CardHeader>
 						<CardContent>
 							<PendingInvitationsList />
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle>Join Requests</CardTitle>
+							<CardDescription>
+								Review requests from users who want to join
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<JoinRequestsAdmin />
 						</CardContent>
 					</Card>
 				</TabsContent>

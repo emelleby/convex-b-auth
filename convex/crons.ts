@@ -27,4 +27,18 @@ crons.monthly(
   internal.auth.cleanupExpiredSessions,
 )
 
+// ---------------------------------------------------------------------------
+// Join request auto-expiry
+// ---------------------------------------------------------------------------
+
+// Expire stale join requests that have passed their expiresAt timestamp.
+// Runs daily at 02:00 UTC.
+//
+// Implementation: convex/joinRequests.ts → expireStaleRequests
+crons.daily(
+  'expire stale join requests',
+  { hourUTC: 2, minuteUTC: 0 },
+  internal.joinRequests.expireStaleRequests,
+)
+
 export default crons

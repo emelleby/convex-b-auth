@@ -1,8 +1,10 @@
 'use client'
 
 import { Link } from '@tanstack/react-router'
-import { Bell, Check, ChevronRight, Loader2, X } from 'lucide-react'
+import { useMutation } from 'convex/react'
+import { Bell, Check, ChevronRight, Loader2, Square, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
 	DropdownMenu,
@@ -12,16 +14,23 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
+import { Separator } from '@/components/ui/separator'
 import { useNotificationActions } from '@/hooks/useNotificationActions'
 import { useNotifications } from '@/hooks/useNotifications'
+import { api } from '../../convex/_generated/api'
 
 export function NotificationCenter() {
 	const {
 		pendingInvitations,
 		pendingJoinRequestsToReview,
+		myNotifications,
 		unreadCount,
 		isLoading
 	} = useNotifications()
+	const markRead = useMutation(api.notifications.markRead)
+	const markAllRead = useMutation(api.notifications.markAllRead)
+
+	const hasUnreadNotifications = myNotifications.some((n) => !n.read)
 
 	const actions = useNotificationActions()
 	const processingId = actions.processingId
@@ -66,6 +75,24 @@ export function NotificationCenter() {
 					<span>Notifications</span>
 					{isLoading ? (
 						<Loader2 className="h-3 w-3 animate-spin" />
+					) : hasUnreadNotifications ? (
+						<Button
+							variant="link"
+							className="h-auto p-0 text-xs font-normal"
+							onClick={async () => {
+								try {
+									await markAllRead()
+								} catch (err) {
+									toast.error(
+										err instanceof Error
+											? err.message
+											: 'Failed to mark all as read'
+									)
+								}
+							}}
+						>
+							Mark all as read
+						</Button>
 					) : unreadCount > 0 ? (
 						<span className="text-xs text-muted-foreground">
 							{unreadCount} pending
@@ -75,12 +102,61 @@ export function NotificationCenter() {
 				<DropdownMenuSeparator />
 
 				{pendingInvitations.length === 0 &&
-				pendingJoinRequestsToReview.length === 0 ? (
+				pendingJoinRequestsToReview.length === 0 &&
+				myNotifications.length === 0 ? (
 					<div className="py-6 text-center text-sm text-muted-foreground">
 						No new notifications
 					</div>
 				) : (
 					<>
+						{myNotifications.length > 0 && (
+							<>
+								<DropdownMenuLabel className="text-xs">Alerts</DropdownMenuLabel>
+								{myNotifications.slice(0, 5).map((n) => (
+									<div
+										key={n._id}
+										className={cn(
+											'flex items-center justify-between px-3 py-2 border-b last:border-b-0',
+											!n.read && 'font-semibold border-l-2 border-primary pl-2'
+										)}
+									>
+										<p
+											className={cn(
+												'text-sm flex-1 pr-2',
+												n.read && 'text-muted-foreground'
+											)}
+										>
+											{n.message}
+										</p>
+										{!n.read && (
+											<>
+												<Separator orientation="vertical" className="h-4 mx-1" />
+												<Button
+													variant="ghost"
+													size="icon"
+													className="h-6 w-6 shrink-0"
+													onClick={async () => {
+														try {
+															await markRead({ notificationId: n._id })
+														} catch (err) {
+															toast.error(
+																err instanceof Error
+																	? err.message
+																	: 'Failed to mark as read'
+															)
+														}
+													}}
+												>
+													<Square className="h-4 w-4 text-muted-foreground" />
+													<span className="sr-only">Mark as read</span>
+												</Button>
+											</>
+										)}
+									</div>
+								))}
+								<DropdownMenuSeparator />
+							</>
+						)}
 						{pendingInvitations.map((invitation) => (
 							<div key={invitation.id} className="p-3 border-b last:border-b-0">
 								<p className="text-sm font-medium">
