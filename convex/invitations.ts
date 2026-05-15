@@ -1,6 +1,7 @@
 import { query } from './_generated/server'
 import { v } from 'convex/values'
 import { getOptionalAuth, requireAuth } from './auth_helpers'
+import { hasOrgRole } from './permissions'
 import { components } from './_generated/api'
 
 // Read queries use getOptionalAuth (returns null) rather than requireAuth
@@ -21,16 +22,8 @@ export const listOrganizationPendingInvitations = query({
     if (!user || !user._id) return []
     const userId = user._id as string
 
-    // Verify user is admin/owner of this organization (via betterAuth component)
-    const membership = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
-      model: 'member',
-      where: [
-        { field: 'userId', value: userId },
-        { field: 'organizationId', value: args.organizationId, connector: 'AND' as const },
-      ],
-    })) as { role: string } | null
-
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
+    // Verify user is admin/owner of this organization
+    if (!await hasOrgRole(ctx, userId, args.organizationId, ['owner', 'admin'])) {
       return []
     }
 

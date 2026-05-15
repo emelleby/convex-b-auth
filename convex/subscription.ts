@@ -1,29 +1,28 @@
-import { internalQuery, query } from './_generated/server'
+import { internalMutation, internalQuery, query } from './_generated/server'
 import { v } from 'convex/values'
 import { getOptionalAuth } from './auth_helpers'
 
+const FREE_DEFAULT = { plan: 'free', status: 'active', isPro: false } as const
+
 /**
- * Returns the current user's subscription plan and status.
- * Defaults to { plan: 'free', status: 'active', isPro: false } when no record exists.
- * Uses getOptionalAuth so reactive subscriptions degrade gracefully.
+ * Returns the subscription for a given organization.
+ * Defaults to free/active when no record exists.
+ * Requires the caller to be authenticated.
  */
-export const getUserSubscription = query({
-  args: {},
-  handler: async (ctx) => {
+export const getOrgSubscription = query({
+  args: { organizationId: v.string() },
+  handler: async (ctx, args) => {
     const user = await getOptionalAuth(ctx)
-    if (!user || !user._id) {
-      return { plan: 'free', status: 'active', isPro: false }
-    }
-    const userId = user._id as string
+    if (!user) return FREE_DEFAULT
 
     const subscription = await ctx.db
       .query('subscription')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .withIndex('by_organizationId', (q) =>
+        q.eq('organizationId', args.organizationId)
+      )
       .first()
 
-    if (!subscription) {
-      return { plan: 'free', status: 'active', isPro: false }
-    }
+    if (!subscription) return FREE_DEFAULT
 
     return {
       plan: subscription.plan,
@@ -35,18 +34,17 @@ export const getUserSubscription = query({
 })
 
 /**
- * Returns true only when the current user has an active Pro subscription.
+ * Internal query: check if an org has an active Pro subscription.
+ * Used by server-side hooks that already know the organizationId.
  */
-export const canCreateOrganization = query({
-  args: {},
-  handler: async (ctx) => {
-    const user = await getOptionalAuth(ctx)
-    if (!user || !user._id) return false
-    const userId = user._id as string
-
+export const isOrgProInternal = internalQuery({
+  args: { organizationId: v.string() },
+  handler: async (ctx, args) => {
     const subscription = await ctx.db
       .query('subscription')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
+      .withIndex('by_organizationId', (q) =>
+        q.eq('organizationId', args.organizationId)
+      )
       .first()
 
     if (!subscription) return false
@@ -55,18 +53,28 @@ export const canCreateOrganization = query({
 })
 
 /**
- * Internal query used by the allowUserToCreateOrganization auth hook.
- * Accepts a userId string directly (Better Auth passes user.id from its session).
+ * Internal mutation: idempotently seeds a free subscription when a new org
+ * is created. Called from the afterCreateOrganization hook in auth.ts.
  */
-export const canCreateOrganizationInternal = internalQuery({
-  args: { userId: v.string() },
+export const createFreeSubscription = internalMutation({
+  args: { organizationId: v.string() },
   handler: async (ctx, args) => {
-    const subscription = await ctx.db
+    const existing = await ctx.db
       .query('subscription')
-      .withIndex('by_userId', (q) => q.eq('userId', args.userId))
+      .withIndex('by_organizationId', (q) =>
+        q.eq('organizationId', args.organizationId)
+      )
       .first()
 
-    if (!subscription) return false
-    return subscription.plan === 'pro' && subscription.status === 'active'
+    if (existing) return // idempotent
+
+    const now = Date.now()
+    await ctx.db.insert('subscription', {
+      organizationId: args.organizationId,
+      plan: 'free',
+      status: 'active',
+      currentPeriodStart: now,
+      currentPeriodEnd: now + 365 * 24 * 60 * 60 * 1000, // 1 year
+    })
   },
 })

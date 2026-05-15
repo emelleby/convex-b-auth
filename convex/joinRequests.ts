@@ -1,6 +1,7 @@
 import { mutation, query, internalMutation } from './_generated/server'
 import { v } from 'convex/values'
 import { requireAuth, getOptionalAuth } from './auth_helpers'
+import { canManageJoinRequests, hasOrgRole } from './permissions'
 import { components } from './_generated/api'
 
 // Generate a unique ID for joinRequest (which stores a custom id field)
@@ -153,16 +154,8 @@ export const listPendingJoinRequests = query({
     if (!user || !user._id) return []
     const userId = user._id as string
 
-    // Verify user is admin/owner of this organization (via betterAuth component)
-    const membership = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
-      model: 'member',
-      where: [
-        { field: 'userId', value: userId },
-        { field: 'organizationId', value: args.organizationId, connector: 'AND' as const },
-      ],
-    })) as { role: string } | null
-
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
+    // Verify user is admin/owner of this organization
+    if (!await hasOrgRole(ctx, userId, args.organizationId, ['owner', 'admin'])) {
       return []
     }
 
@@ -223,18 +216,8 @@ export const approveJoinRequest = mutation({
       throw new Error('Request has already been processed')
     }
 
-    // Verify user is admin/owner (via betterAuth component)
-    const membership = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
-      model: 'member',
-      where: [
-        { field: 'userId', value: userId },
-        { field: 'organizationId', value: request.organizationId, connector: 'AND' as const },
-      ],
-    })) as { role: string } | null
-
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      throw new Error('Only organization admins can approve join requests')
-    }
+    // Verify user is admin/owner (throws ConvexError if not)
+    await canManageJoinRequests(ctx, request.organizationId)
 
     // Update request status
     await ctx.db.patch(request._id, {
@@ -303,18 +286,8 @@ export const rejectJoinRequest = mutation({
       throw new Error('Request has already been processed')
     }
 
-    // Verify user is admin/owner (via betterAuth component)
-    const membership = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
-      model: 'member',
-      where: [
-        { field: 'userId', value: userId },
-        { field: 'organizationId', value: request.organizationId, connector: 'AND' as const },
-      ],
-    })) as { role: string } | null
-
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      throw new Error('Only organization admins can reject join requests')
-    }
+    // Verify user is admin/owner (throws ConvexError if not)
+    await canManageJoinRequests(ctx, request.organizationId)
 
     await ctx.db.patch(request._id, {
       status: 'rejected',

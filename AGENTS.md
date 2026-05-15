@@ -121,6 +121,9 @@ When the user corrects you ("no, use X not Y", "that's wrong"):
 <!-- Plur memory end -->
 
 ---
+## Update plans and worklists
+If we are working on some form of written plan or task list, always remember to update the progress and what has been done. The plan document will later serve as the system documentation so this is critical. 
+---
 
 ## Better Auth with Convex Adapter
 

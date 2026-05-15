@@ -2,7 +2,12 @@
 
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
-import { AlertTriangle, CalendarClock, Save } from 'lucide-react'
+import {
+	AlertTriangle,
+	ArrowLeftRight,
+	CalendarClock,
+	Save
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -30,6 +35,7 @@ import {
 	SelectTrigger,
 	SelectValue
 } from '@/components/ui/select'
+import { useOrgRole } from '@/hooks/useOrgRole'
 import { authClient } from '@/lib/auth-client'
 import { api } from '../../../convex/_generated/api'
 
@@ -37,6 +43,7 @@ export default function OrgSettings() {
 	const navigate = useNavigate()
 	const { data: activeOrg } = authClient.useActiveOrganization()
 	const { data: session } = authClient.useSession()
+	const { isOwner, isAdmin } = useOrgRole()
 
 	const [name, setName] = useState('')
 	const [slug, setSlug] = useState('')
@@ -46,6 +53,11 @@ export default function OrgSettings() {
 	const [deleteConfirmation, setDeleteConfirmation] = useState('')
 	const [error, setError] = useState<string | null>(null)
 	const [success, setSuccess] = useState<string | null>(null)
+
+	// Transfer Ownership state
+	const [showTransferDialog, setShowTransferDialog] = useState(false)
+	const [selectedNewOwnerId, setSelectedNewOwnerId] = useState('')
+	const [isTransferring, setIsTransferring] = useState(false)
 
 	// Invitation settings state
 	const [invitationValidityDays, setInvitationValidityDays] =
@@ -74,18 +86,6 @@ export default function OrgSettings() {
 	}, [orgSettings])
 
 	const upsertSettings = useMutation(api.orgSettings.upsertSettings)
-
-	// Check if current user is owner
-	const isOwner = activeOrg?.members?.some(
-		(m) => m.userId === session?.user?.id && m.role === 'owner'
-	)
-
-	// Check if current user is admin or owner
-	const isAdminOrOwner = activeOrg?.members?.some(
-		(m) =>
-			m.userId === session?.user?.id &&
-			(m.role === 'owner' || m.role === 'admin')
-	)
 
 	const handleSave = async () => {
 		try {
@@ -140,6 +140,41 @@ export default function OrgSettings() {
 			)
 		} finally {
 			setIsDeleting(false)
+		}
+	}
+
+	// Members eligible to receive ownership (current admins only)
+	const adminMembers = (activeOrg?.members ?? []).filter(
+		(m) => m.role === 'admin'
+	)
+	// Current user's member record — needed to demote self after promoting new owner
+	const currentUserMember = (activeOrg?.members ?? []).find(
+		(m) => m.userId === session?.user?.id
+	)
+
+	const handleTransferOwnership = async () => {
+		if (!selectedNewOwnerId || !currentUserMember) return
+		try {
+			setIsTransferring(true)
+			// Step 1: promote the selected admin to owner
+			await authClient.organization.updateMemberRole({
+				memberId: selectedNewOwnerId,
+				role: 'owner'
+			})
+			// Step 2: demote self to admin (now safe: ≥2 owners exist)
+			await authClient.organization.updateMemberRole({
+				memberId: currentUserMember.id,
+				role: 'admin'
+			})
+			toast.success('Ownership transferred successfully!')
+			setShowTransferDialog(false)
+			setSelectedNewOwnerId('')
+		} catch (err) {
+			toast.error(
+				err instanceof Error ? err.message : 'Failed to transfer ownership'
+			)
+		} finally {
+			setIsTransferring(false)
 		}
 	}
 
@@ -200,7 +235,7 @@ export default function OrgSettings() {
 			</Card>
 
 			{/* Invitation Settings - Admin/Owner only */}
-			{isAdminOrOwner && (
+			{isAdmin && (
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
@@ -281,7 +316,26 @@ export default function OrgSettings() {
 							Irreversible actions that affect your organization
 						</CardDescription>
 					</CardHeader>
-					<CardContent>
+					<CardContent className="space-y-4">
+						{/* Transfer Ownership */}
+						<div className="flex items-center justify-between pb-4 border-b">
+							<div>
+								<p className="font-medium">Transfer Ownership</p>
+								<p className="text-sm text-muted-foreground">
+									Promote an admin to owner. You will become an admin.
+								</p>
+							</div>
+							<Button
+								variant="outline"
+								onClick={() => setShowTransferDialog(true)}
+								disabled={adminMembers.length === 0}
+							>
+								<ArrowLeftRight className="h-4 w-4 mr-2" />
+								Transfer Ownership
+							</Button>
+						</div>
+
+						{/* Delete Organization */}
 						<div className="flex items-center justify-between">
 							<div>
 								<p className="font-medium">Delete Organization</p>
@@ -299,6 +353,80 @@ export default function OrgSettings() {
 					</CardContent>
 				</Card>
 			)}
+
+			{/* Transfer Ownership Dialog */}
+			<Dialog
+				open={showTransferDialog}
+				onOpenChange={(open) => {
+					setShowTransferDialog(open)
+					if (!open) setSelectedNewOwnerId('')
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2">
+							<ArrowLeftRight className="h-5 w-5" />
+							Transfer Ownership
+						</DialogTitle>
+						<DialogDescription>
+							Select an admin to become the new owner. You will become an admin.
+							This action requires the new owner's cooperation to reverse.
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="py-4 space-y-3">
+						{adminMembers.length === 0 ? (
+							<p className="text-sm text-muted-foreground">
+								There are no admins to transfer ownership to. Promote a member
+								to admin first.
+							</p>
+						) : (
+							<div className="space-y-2">
+								<Label>New Owner</Label>
+								<Select
+									value={selectedNewOwnerId}
+									onValueChange={setSelectedNewOwnerId}
+									disabled={isTransferring}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Select an admin…" />
+									</SelectTrigger>
+									<SelectContent>
+										{adminMembers.map((m) => (
+											<SelectItem key={m.id} value={m.id}>
+												{m.user.name || m.user.email}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						)}
+					</div>
+
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => {
+								setShowTransferDialog(false)
+								setSelectedNewOwnerId('')
+							}}
+							disabled={isTransferring}
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={handleTransferOwnership}
+							disabled={
+								!selectedNewOwnerId ||
+								isTransferring ||
+								adminMembers.length === 0
+							}
+						>
+							{isTransferring ? 'Transferring…' : 'Transfer Ownership'}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 
 			{/* Delete Confirmation Dialog */}
 			<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

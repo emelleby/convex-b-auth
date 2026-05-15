@@ -1,5 +1,6 @@
 import { useQuery } from 'convex/react'
 import { useConvexAuthReady } from '@/hooks/useConvexAuthReady'
+import { useOrgRole } from '@/hooks/useOrgRole'
 import { authClient } from '@/lib/auth-client'
 import { api } from '../../convex/_generated/api'
 
@@ -37,12 +38,7 @@ export function useNotifications() {
 	)
 
 	// For admins: pending join requests to review.
-	// `user` from useConvexAuthReady is sourced from the BA session — same data,
-	// but already gated on Convex JWT readiness.
-	const { user } = useConvexAuthReady()
-	const isAdmin = activeOrg?.members?.some(
-		(m) => m.userId === user?.id && ['owner', 'admin'].includes(m.role)
-	)
+	const { isAdmin } = useOrgRole()
 
 	const pendingJoinRequestsToReview = useQuery(
 		api.joinRequests.listPendingJoinRequests,
@@ -87,16 +83,13 @@ export function useNotifications() {
  * Uses a separate optimized query.
  */
 export function useNotificationCount() {
-	const { isAuthenticated, user } = useConvexAuthReady()
+	const { isAuthenticated } = useConvexAuthReady()
 	const { data: activeOrg } = authClient.useActiveOrganization()
+	const { isAdmin } = useOrgRole()
 
 	const invitationCount = useQuery(
 		api.invitations.getPendingCount,
 		isAuthenticated ? {} : 'skip'
-	)
-
-	const isAdmin = activeOrg?.members?.some(
-		(m) => m.userId === user?.id && ['owner', 'admin'].includes(m.role)
 	)
 
 	const joinRequestCount = useQuery(

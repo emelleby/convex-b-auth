@@ -46,14 +46,14 @@ export default defineSchema({
   })
     .index('by_organizationId', ['organizationId']),
   subscription: defineTable({
-    userId: v.string(),
+    organizationId: v.string(),                // one subscription per org
     plan: v.string(),                          // 'free' | 'pro'
     status: v.string(),                        // 'active' | 'canceled' | 'past_due' | 'trialing'
-    stripeCustomerId: v.optional(v.string()),
+    stripeCustomerId: v.optional(v.string()),  // Stripe customer for the org
     stripeSubscriptionId: v.optional(v.string()),
     currentPeriodStart: v.number(),
     currentPeriodEnd: v.number(),
   })
-    .index('by_userId', ['userId'])
+    .index('by_organizationId', ['organizationId'])
     .index('by_stripeCustomerId', ['stripeCustomerId']),
 })

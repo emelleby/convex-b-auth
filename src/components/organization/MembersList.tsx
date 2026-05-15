@@ -21,6 +21,7 @@ import {
 	ArrowDown,
 	ArrowUp,
 	ArrowUpDown,
+	Crown,
 	MoreHorizontal,
 	Search
 } from 'lucide-react'
@@ -61,6 +62,7 @@ import {
 	TableHeader,
 	TableRow
 } from '@/components/ui/table'
+import { useOrgRole } from '@/hooks/useOrgRole'
 import { authClient } from '@/lib/auth-client'
 import { api } from '../../../convex/_generated/api'
 import InviteMemberDialog from './InviteMemberDialog'
@@ -160,12 +162,16 @@ function DebouncedInput({
 export default function MembersList() {
 	const { data: session } = authClient.useSession()
 	const { data: activeOrg } = authClient.useActiveOrganization()
+	const { isAdmin, isOwner } = useOrgRole()
 	const queryClient = useQueryClient()
 	const [removingMemberId, setRemovingMemberId] = useState<string | null>(null)
 	const [managingTeamsMember, setManagingTeamsMember] = useState<Member | null>(
 		null
 	)
 	const [togglingTeamId, setTogglingTeamId] = useState<string | null>(null)
+	const [transferringToMember, setTransferringToMember] =
+		useState<Member | null>(null)
+	const [isTransferring, setIsTransferring] = useState(false)
 	const [globalFilter, setGlobalFilter] = useState('')
 	const [selectedTeamId, setSelectedTeamId] = useState('all')
 	const [sorting, setSorting] = useState<SortingState>([])
@@ -263,10 +269,6 @@ export default function MembersList() {
 		[members, selectedTeamId, teamMembershipsMap]
 	)
 
-	const currentUserMember = members.find((m) => m.userId === session?.user?.id)
-	const isAdmin =
-		currentUserMember?.role === 'admin' || currentUserMember?.role === 'owner'
-
 	const errorMessage =
 		(error as Error | null)?.message ??
 		(removeMutation.error as Error | null)?.message ??
@@ -339,13 +341,11 @@ export default function MembersList() {
 				header: () => <div className="text-right">Actions</div>,
 				cell: ({ row }) => {
 					const member = row.original
-					if (
-						!isAdmin ||
-						member.role === 'owner' ||
-						member.userId === session?.user?.id
-					) {
-						return null
-					}
+					// No actions for non-admins or self
+					if (!isAdmin || member.userId === session?.user?.id) return null
+					// Admins see no actions on owner rows; owners can act on everyone
+					if (!isOwner && member.role === 'owner') return null
+
 					return (
 						<div className="flex justify-end">
 							<DropdownMenu>
@@ -362,32 +362,52 @@ export default function MembersList() {
 									>
 										Manage Teams
 									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-										Change Role
-									</DropdownMenuLabel>
-									<DropdownMenuItem
-										disabled={member.role === 'admin'}
-										onClick={() =>
-											changeRoleMutation.mutate({
-												memberId: member.id,
-												role: 'admin'
-											})
-										}
-									>
-										Make Admin
-									</DropdownMenuItem>
-									<DropdownMenuItem
-										disabled={member.role === 'member'}
-										onClick={() =>
-											changeRoleMutation.mutate({
-												memberId: member.id,
-												role: 'member'
-											})
-										}
-									>
-										Make Member
-									</DropdownMenuItem>
+
+									{/* Role changes — hidden for owner targets */}
+									{member.role !== 'owner' && (
+										<>
+											<DropdownMenuSeparator />
+											<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+												Change Role
+											</DropdownMenuLabel>
+											<DropdownMenuItem
+												disabled={member.role === 'admin'}
+												onClick={() =>
+													changeRoleMutation.mutate({
+														memberId: member.id,
+														role: 'admin'
+													})
+												}
+											>
+												Make Admin
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												disabled={member.role === 'member'}
+												onClick={() =>
+													changeRoleMutation.mutate({
+														memberId: member.id,
+														role: 'member'
+													})
+												}
+											>
+												Make Member
+											</DropdownMenuItem>
+										</>
+									)}
+
+									{/* Transfer Ownership — owner actor on admin target only */}
+									{isOwner && member.role === 'admin' && (
+										<>
+											<DropdownMenuSeparator />
+											<DropdownMenuItem
+												onClick={() => setTransferringToMember(member)}
+											>
+												<Crown className="h-4 w-4 mr-2" />
+												Transfer Ownership
+											</DropdownMenuItem>
+										</>
+									)}
+
 									<DropdownMenuSeparator />
 									<DropdownMenuItem
 										className="text-destructive"
@@ -402,11 +422,16 @@ export default function MembersList() {
 				}
 			}
 		],
-		// changeRoleMutation.mutate is stable (useCallback in React Query v5).
-		// Listing the whole changeRoleMutation object would cause columns to
-		// rebuild every render because useMutation returns a new object reference
-		// on each render, which was the second half of the render-loop freeze.
-		[session?.user?.id, isAdmin, changeRoleMutation.mutate, teamMembershipsMap]
+		// changeRoleMutation.mutate and setTransferringToMember are both stable
+		// references (React Query v5 useCallback + React useState setter).
+		// isOwner/isAdmin are primitives — safe to include directly.
+		[
+			session?.user?.id,
+			isAdmin,
+			isOwner,
+			changeRoleMutation.mutate,
+			teamMembershipsMap
+		]
 	)
 
 	const table = useReactTable({
@@ -598,6 +623,73 @@ export default function MembersList() {
 							onClick={() => setManagingTeamsMember(null)}
 						>
 							Done
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Transfer Ownership confirmation dialog */}
+			<Dialog
+				open={!!transferringToMember}
+				onOpenChange={(open) => {
+					if (!open) setTransferringToMember(null)
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2">
+							<Crown className="h-5 w-5" />
+							Transfer Ownership
+						</DialogTitle>
+						<DialogDescription>
+							<strong>
+								{transferringToMember?.user.name ||
+									transferringToMember?.user.email}
+							</strong>{' '}
+							will become the new owner. You will become an admin. This requires
+							their cooperation to reverse.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setTransferringToMember(null)}
+							disabled={isTransferring}
+						>
+							Cancel
+						</Button>
+						<Button
+							disabled={isTransferring}
+							onClick={async () => {
+								if (!transferringToMember) return
+								const currentUserMember = members.find(
+									(m) => m.userId === session?.user?.id
+								)
+								if (!currentUserMember) return
+								try {
+									setIsTransferring(true)
+									await authClient.organization.updateMemberRole({
+										memberId: transferringToMember.id,
+										role: 'owner'
+									})
+									await authClient.organization.updateMemberRole({
+										memberId: currentUserMember.id,
+										role: 'admin'
+									})
+									queryClient.invalidateQueries({
+										queryKey: ['organization-members', activeOrg?.id]
+									})
+									setTransferringToMember(null)
+								} catch (err) {
+									// Error surfaces via changeRoleMutation error display above table
+									console.error('Transfer ownership failed:', err)
+									setTransferringToMember(null)
+								} finally {
+									setIsTransferring(false)
+								}
+							}}
+						>
+							{isTransferring ? 'Transferring…' : 'Transfer Ownership'}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
