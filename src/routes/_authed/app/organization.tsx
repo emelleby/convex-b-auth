@@ -16,6 +16,7 @@ import {
 	CardTitle
 } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useOrgRole } from '@/hooks/useOrgRole'
 import { authClient } from '@/lib/auth-client'
 
 const tabSchema = z.enum([
@@ -37,6 +38,8 @@ function OrganizationPage() {
 	const { data: activeOrg, isPending } = authClient.useActiveOrganization()
 	const { tab } = Route.useSearch()
 	const navigate = useNavigate({ from: Route.fullPath })
+	const { isAdmin, isOwner } = useOrgRole()
+	const canManage = isAdmin || isOwner
 
 	if (isPending) {
 		return (
@@ -75,7 +78,9 @@ function OrganizationPage() {
 				onValueChange={(v) => navigate({ search: { tab: v as typeof tab } })}
 				className="w-full"
 			>
-				<TabsList className="grid w-full grid-cols-5">
+				<TabsList
+					className={`grid w-full ${canManage ? 'grid-cols-5' : 'grid-cols-3'}`}
+				>
 					<TabsTrigger value="overview" className="flex items-center gap-2">
 						<Building2 className="h-4 w-4" />
 						Overview
@@ -88,14 +93,25 @@ function OrganizationPage() {
 						<UserCog className="h-4 w-4" />
 						Teams
 					</TabsTrigger>
-					<TabsTrigger value="invitations" className="flex items-center gap-2">
-						<Mail className="h-4 w-4" />
-						Invitations
-					</TabsTrigger>
-					<TabsTrigger value="settings" className="flex items-center gap-2">
-						<Settings className="h-4 w-4" />
-						Settings
-					</TabsTrigger>
+
+					{/* Invitations tab — admin/owner only */}
+					{canManage && (
+						<TabsTrigger
+							value="invitations"
+							className="flex items-center gap-2"
+						>
+							<Mail className="h-4 w-4" />
+							Invitations
+						</TabsTrigger>
+					)}
+
+					{/* Settings tab — admin/owner only */}
+					{canManage && (
+						<TabsTrigger value="settings" className="flex items-center gap-2">
+							<Settings className="h-4 w-4" />
+							Settings
+						</TabsTrigger>
+					)}
 				</TabsList>
 
 				<TabsContent value="overview" className="mt-6">
@@ -138,35 +154,49 @@ function OrganizationPage() {
 					</Card>
 				</TabsContent>
 
-				<TabsContent value="invitations" className="mt-6 space-y-6">
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between">
-							<div>
-								<CardTitle>Invitations</CardTitle>
-								<CardDescription>Manage sent invitations</CardDescription>
-							</div>
-							<div className="flex items-center gap-2">
-								<BulkInviteDialog />
-								<InviteMemberDialog />
-							</div>
-						</CardHeader>
-						<CardContent>
-							<PendingInvitationsList />
-						</CardContent>
-					</Card>
+				{/* Invitations tab content — admin/owner only */}
+				{canManage ? (
+					<TabsContent value="invitations" className="mt-6 space-y-6">
+						<Card>
+							<CardHeader className="flex flex-row items-center justify-between">
+								<div>
+									<CardTitle>Invitations</CardTitle>
+									<CardDescription>Manage sent invitations</CardDescription>
+								</div>
+								<div className="flex items-center gap-2">
+									<BulkInviteDialog />
+									<InviteMemberDialog />
+								</div>
+							</CardHeader>
+							<CardContent>
+								<PendingInvitationsList />
+							</CardContent>
+						</Card>
 
-					<Card>
-						<CardHeader>
-							<CardTitle>Join Requests</CardTitle>
-							<CardDescription>
-								Review requests from users who want to join
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<JoinRequestsAdmin />
-						</CardContent>
-					</Card>
-				</TabsContent>
+						<Card>
+							<CardHeader>
+								<CardTitle>Join Requests</CardTitle>
+								<CardDescription>
+									Review requests from users who want to join
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								<JoinRequestsAdmin />
+							</CardContent>
+						</Card>
+					</TabsContent>
+				) : (
+					<TabsContent value="invitations" className="mt-6">
+						<Card>
+							<CardHeader>
+								<CardTitle>Access Denied</CardTitle>
+								<CardDescription>
+									You do not have permission to manage invitations.
+								</CardDescription>
+							</CardHeader>
+						</Card>
+					</TabsContent>
+				)}
 
 				<TabsContent value="settings" className="mt-6">
 					<OrgSettings />
