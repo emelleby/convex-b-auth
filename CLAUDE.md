@@ -64,13 +64,22 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
 
+---
+**Runtime and Package Manager**
+This project uses 'bun' as runtime and package manager. always use bun for bash commands.
+---
+
 ## Convex AI
 <!-- convex-ai-start -->
 
 This project uses [Convex](https://convex.dev) as its backend.
 
-When working on Convex code, **always read `convex/_generated/ai/guidelines.md` first** for important guidelines on how to correctly use Convex APIs and patterns. The file contains rules that override what you may have learned about Convex from training data.
+When working on Convex code, **always read
+`convex/_generated/ai/guidelines.md` first** for important guidelines on
+how to correctly use Convex APIs and patterns. The file contains rules that
+override what you may have learned about Convex from training data.
 
+There are also Convex agent skills for common tasks that provide additional guidance. Check for relevant skills when working with Convex.
 Convex agent skills for common tasks can be installed by running
 `npx convex ai-files install`.
 

@@ -22,6 +22,9 @@ import type * as orgSettings from "../orgSettings.js";
 import type * as people from "../people.js";
 import type * as permissions from "../permissions.js";
 import type * as subscription from "../subscription.js";
+import type * as teamJoinRequests from "../teamJoinRequests.js";
+import type * as teamPermissions from "../teamPermissions.js";
+import type * as teams from "../teams.js";
 import type * as testAuth from "../testAuth.js";
 import type * as todos from "../todos.js";
 
@@ -46,6 +49,9 @@ declare const fullApi: ApiFromModules<{
   people: typeof people;
   permissions: typeof permissions;
   subscription: typeof subscription;
+  teamJoinRequests: typeof teamJoinRequests;
+  teamPermissions: typeof teamPermissions;
+  teams: typeof teams;
   testAuth: typeof testAuth;
   todos: typeof todos;
 }>;

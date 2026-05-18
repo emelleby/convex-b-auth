@@ -58,6 +58,7 @@ import {
 	Table,
 	TableBody,
 	TableCell,
+	TableFooter,
 	TableHead,
 	TableHeader,
 	TableRow
@@ -275,153 +276,164 @@ export default function MembersList() {
 		(changeRoleMutation.error as Error | null)?.message
 
 	const columns = useMemo<ColumnDef<Member, unknown>[]>(
-		() => [
-			{
-				id: 'name',
-				accessorFn: (row) => row.user.name || 'Unknown',
-				header: ({ column }) => <SortableHeader column={column} label="Name" />,
-				cell: ({ row }) => (
-					<div className="font-medium">
-						{row.original.user.name || 'Unknown'}
-						{row.original.userId === session?.user?.id && (
-							<span className="text-xs text-muted-foreground ml-1">(You)</span>
-						)}
-					</div>
-				),
-				filterFn: 'fuzzy',
-				sortingFn: fuzzySort as SortingFn<Member>
-			},
-			{
-				id: 'email',
-				accessorFn: (row) => row.user.email || '',
-				header: ({ column }) => (
-					<SortableHeader column={column} label="Email" />
-				),
-				cell: ({ row }) => (
-					<span className="text-muted-foreground">
-						{row.original.user.email || '—'}
-					</span>
-				)
-			},
-			{
-				id: 'role',
-				accessorFn: (row) => row.role,
-				header: ({ column }) => <SortableHeader column={column} label="Role" />,
-				cell: ({ row }) => (
-					<span className="inline-block px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium capitalize">
-						{row.original.role}
-					</span>
-				)
-			},
-			{
-				id: 'teams',
-				enableSorting: false,
-				enableGlobalFilter: false,
-				header: () => 'Teams',
-				cell: ({ row }) => {
-					const memberTeams = teamMembershipsMap?.[row.original.userId] ?? []
-					if (memberTeams.length === 0) {
-						return <span className="text-muted-foreground">—</span>
+		() => {
+			const base: ColumnDef<Member, unknown>[] = [
+				{
+					id: 'name',
+					accessorFn: (row) => row.user.name || 'Unknown',
+					header: ({ column }) => (
+						<SortableHeader column={column} label="Name" />
+					),
+					cell: ({ row }) => (
+						<div className="font-medium">
+							{row.original.user.name || 'Unknown'}
+							{row.original.userId === session?.user?.id && (
+								<span className="text-xs text-muted-foreground ml-1">
+									(You)
+								</span>
+							)}
+						</div>
+					),
+					filterFn: 'fuzzy',
+					sortingFn: fuzzySort as SortingFn<Member>
+				},
+				{
+					id: 'email',
+					accessorFn: (row) => row.user.email || '',
+					header: ({ column }) => (
+						<SortableHeader column={column} label="Email" />
+					),
+					cell: ({ row }) => (
+						<span className="text-muted-foreground">
+							{row.original.user.email || '—'}
+						</span>
+					)
+				},
+				{
+					id: 'role',
+					accessorFn: (row) => row.role,
+					header: ({ column }) => (
+						<SortableHeader column={column} label="Role" />
+					),
+					cell: ({ row }) => (
+						<span className="inline-block px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium capitalize">
+							{row.original.role}
+						</span>
+					)
+				},
+				{
+					id: 'teams',
+					enableSorting: false,
+					enableGlobalFilter: false,
+					header: () => 'Teams',
+					cell: ({ row }) => {
+						const memberTeams = teamMembershipsMap?.[row.original.userId] ?? []
+						if (memberTeams.length === 0) {
+							return <span className="text-muted-foreground">—</span>
+						}
+						return (
+							<div className="flex flex-wrap gap-1">
+								{memberTeams.map((t) => (
+									<Badge key={t.id} variant="secondary" className="text-xs">
+										{t.name}
+									</Badge>
+								))}
+							</div>
+						)
 					}
-					return (
-						<div className="flex flex-wrap gap-1">
-							{memberTeams.map((t) => (
-								<Badge key={t.id} variant="secondary" className="text-xs">
-									{t.name}
-								</Badge>
-							))}
-						</div>
-					)
 				}
-			},
-			{
-				id: 'actions',
-				enableSorting: false,
-				enableGlobalFilter: false,
-				header: () => <div className="text-right">Actions</div>,
-				cell: ({ row }) => {
-					const member = row.original
-					// No actions for non-admins or self
-					if (!isAdmin || member.userId === session?.user?.id) return null
-					// Admins see no actions on owner rows; owners can act on everyone
-					if (!isOwner && member.role === 'owner') return null
+			]
 
-					return (
-						<div className="flex justify-end">
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" className="h-8 w-8 p-0">
-										<span className="sr-only">Open menu</span>
-										<MoreHorizontal className="h-4 w-4" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="end">
-									<DropdownMenuLabel>Actions</DropdownMenuLabel>
-									<DropdownMenuItem
-										onClick={() => setManagingTeamsMember(member)}
-									>
-										Manage Teams
-									</DropdownMenuItem>
+			if (isAdmin) {
+				base.push({
+					id: 'actions',
+					enableSorting: false,
+					enableGlobalFilter: false,
+					header: () => <div className="text-right">Actions</div>,
+					cell: ({ row }) => {
+						const member = row.original
+						if (member.userId === session?.user?.id) return null
+						if (!isOwner && member.role === 'owner') return null
 
-									{/* Role changes — hidden for owner targets */}
-									{member.role !== 'owner' && (
-										<>
-											<DropdownMenuSeparator />
-											<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-												Change Role
-											</DropdownMenuLabel>
-											<DropdownMenuItem
-												disabled={member.role === 'admin'}
-												onClick={() =>
-													changeRoleMutation.mutate({
-														memberId: member.id,
-														role: 'admin'
-													})
-												}
-											>
-												Make Admin
-											</DropdownMenuItem>
-											<DropdownMenuItem
-												disabled={member.role === 'member'}
-												onClick={() =>
-													changeRoleMutation.mutate({
-														memberId: member.id,
-														role: 'member'
-													})
-												}
-											>
-												Make Member
-											</DropdownMenuItem>
-										</>
-									)}
+						return (
+							<div className="flex justify-end">
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button variant="ghost" className="h-8 w-8 p-0">
+											<span className="sr-only">Open menu</span>
+											<MoreHorizontal className="h-4 w-4" />
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end">
+										<DropdownMenuLabel>Actions</DropdownMenuLabel>
+										<DropdownMenuItem
+											onClick={() => setManagingTeamsMember(member)}
+										>
+											Manage Teams
+										</DropdownMenuItem>
 
-									{/* Transfer Ownership — owner actor on admin target only */}
-									{isOwner && member.role === 'admin' && (
-										<>
-											<DropdownMenuSeparator />
-											<DropdownMenuItem
-												onClick={() => setTransferringToMember(member)}
-											>
-												<Crown className="h-4 w-4 mr-2" />
-												Transfer Ownership
-											</DropdownMenuItem>
-										</>
-									)}
+										{/* Role changes — hidden for owner targets */}
+										{member.role !== 'owner' && (
+											<>
+												<DropdownMenuSeparator />
+												<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+													Change Role
+												</DropdownMenuLabel>
+												<DropdownMenuItem
+													disabled={member.role === 'admin'}
+													onClick={() =>
+														changeRoleMutation.mutate({
+															memberId: member.id,
+															role: 'admin'
+														})
+													}
+												>
+													Make Admin
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													disabled={member.role === 'member'}
+													onClick={() =>
+														changeRoleMutation.mutate({
+															memberId: member.id,
+															role: 'member'
+														})
+													}
+												>
+													Make Member
+												</DropdownMenuItem>
+											</>
+										)}
 
-									<DropdownMenuSeparator />
-									<DropdownMenuItem
-										className="text-destructive"
-										onClick={() => setRemovingMemberId(member.id)}
-									>
-										Remove from organization
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-						</div>
-					)
-				}
+										{/* Transfer Ownership — owner actor on admin target only */}
+										{isOwner && member.role === 'admin' && (
+											<>
+												<DropdownMenuSeparator />
+												<DropdownMenuItem
+													onClick={() => setTransferringToMember(member)}
+												>
+													<Crown className="h-4 w-4 mr-2" />
+													Transfer Ownership
+												</DropdownMenuItem>
+											</>
+										)}
+
+										<DropdownMenuSeparator />
+										<DropdownMenuItem
+											className="text-destructive"
+											onClick={() => setRemovingMemberId(member.id)}
+										>
+											Remove from organization
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							</div>
+						)
+					}
+				})
 			}
-		],
+
+			return base
+		},
 		// changeRoleMutation.mutate and setTransferringToMember are both stable
 		// references (React Query v5 useCallback + React useState setter).
 		// isOwner/isAdmin are primitives — safe to include directly.
@@ -551,6 +563,7 @@ export default function MembersList() {
 							</TableRow>
 						)}
 					</TableBody>
+					<TableFooter>We should hide the email in production.</TableFooter>
 				</Table>
 			</div>
 

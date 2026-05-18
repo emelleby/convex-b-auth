@@ -56,4 +56,17 @@ export default defineSchema({
   })
     .index('by_organizationId', ['organizationId'])
     .index('by_stripeCustomerId', ['stripeCustomerId']),
+  // teamMember and team are BA-managed (convex/betterAuth/schema.ts). Do not re-define them.
+  teamJoinRequest: defineTable({
+    teamId: v.string(),
+    userId: v.string(),
+    status: v.string(), // 'pending' | 'approved' | 'rejected' | 'cancelled'
+    message: v.optional(v.string()),
+    createdAt: v.number(),
+    reviewedAt: v.optional(v.number()),
+    reviewedBy: v.optional(v.string()),
+  })
+    .index('by_teamId', ['teamId'])
+    .index('by_userId', ['userId'])
+    .index('by_status_and_teamId', ['status', 'teamId']),
 })

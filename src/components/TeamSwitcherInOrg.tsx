@@ -32,13 +32,10 @@ export function TeamSwitcherInOrg() {
 	const [activeTeam, setActiveTeam] = useState<Team | null>(null)
 	const navigate = useNavigate()
 
-	// Query: Fetch teams using TanStack Query + Better-Auth API
+	// Query: Fetch only the teams the current user belongs to
 	const { data: teams = [], isLoading } = useQuery({
-		queryKey: ['organization-teams', activeOrg?.id],
-		queryFn: () =>
-			authClient.organization.listTeams({
-				query: { organizationId: activeOrg?.id }
-			}),
+		queryKey: ['user-teams'],
+		queryFn: () => authClient.organization.listUserTeams(),
 		enabled: !!activeOrg?.id,
 		select: (response: any) => response.data ?? []
 	})

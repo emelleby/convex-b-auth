@@ -14,6 +14,10 @@ import {
 	useReactTable
 } from '@tanstack/react-table'
 import {
+	useMutation as useConvexMutation,
+	useQuery as useConvexQuery
+} from 'convex/react'
+import {
 	ArrowDown,
 	ArrowUp,
 	ArrowUpDown,
@@ -22,6 +26,8 @@ import {
 	Search
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
 	Dialog,
@@ -40,6 +46,7 @@ import {
 	DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
 	Table,
@@ -49,9 +56,14 @@ import {
 	TableHeader,
 	TableRow
 } from '@/components/ui/table'
+import { Textarea } from '@/components/ui/textarea'
 import { authClient } from '@/lib/auth-client'
+import { useOrgRole } from '@/hooks/useOrgRole'
+import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 import TeamDialog from './TeamDialog'
+import TeamManagePanel from './TeamManagePanel'
 
 interface Team {
 	id: string
@@ -60,6 +72,8 @@ interface Team {
 	createdAt: Date
 	updatedAt: Date
 }
+
+type MembershipStatus = 'leader' | 'member' | 'pending' | 'none'
 
 function SortableHeader({
 	column,
@@ -125,12 +139,18 @@ const fuzzyFilter: FilterFn<Team> = (row, columnId, value, addMeta) => {
 
 export default function TeamsList() {
 	const { data: activeOrg } = authClient.useActiveOrganization()
+	const { isAdmin } = useOrgRole()
 	const queryClient = useQueryClient()
 	const [globalFilter, setGlobalFilter] = useState('')
 	const [sorting, setSorting] = useState<SortingState>([])
 	const [deletingTeamId, setDeletingTeamId] = useState<string | null>(null)
 	const [editingTeam, setEditingTeam] = useState<Team | null>(null)
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+	const [joinRequestTeam, setJoinRequestTeam] = useState<Team | null>(null)
+	const [joinMessage, setJoinMessage] = useState('')
+	const [joinSubmitting, setJoinSubmitting] = useState(false)
+	const [leavingTeam, setLeavingTeam] = useState<Team | null>(null)
+	const [managingTeam, setManagingTeam] = useState<Team | null>(null)
 
 	const {
 		data: teamsResponse,
@@ -159,74 +179,221 @@ export default function TeamsList() {
 	})
 
 	const teams = (teamsResponse?.data as Team[] | undefined) ?? []
+	const teamIds = teams.map((t) => t.id)
+
+	// Batch-fetch membership statuses for all visible teams in one Convex query
+	const statuses = useConvexQuery(
+		api.teams.getTeamMembershipStatuses,
+		teamIds.length > 0 ? { teamIds } : 'skip'
+	) as Record<string, MembershipStatus> | undefined
+
+	// Fetch user's own pending team join requests to resolve request IDs for cancel
+	const myPendingRequests = useConvexQuery(
+		api.teamJoinRequests.listMyTeamJoinRequests
+	)
+	const pendingRequestIdByTeam = useMemo<
+		Record<string, Id<'teamJoinRequest'>>
+	>(() => {
+		const map: Record<string, Id<'teamJoinRequest'>> = {}
+		for (const req of myPendingRequests ?? []) {
+			if (req.status === 'pending') {
+				map[req.teamId] = req._id
+			}
+		}
+		return map
+	}, [myPendingRequests])
+
+	// Convex mutations for team-level operations
+	const createJoinRequest = useConvexMutation(
+		api.teamJoinRequests.createTeamJoinRequest
+	)
+	const cancelJoinRequest = useConvexMutation(
+		api.teamJoinRequests.cancelTeamJoinRequest
+	)
+	const leaveTeamMutation = useConvexMutation(api.teamJoinRequests.leaveTeam)
+
+	const handleJoinRequestSubmit = async () => {
+		if (!joinRequestTeam) return
+		setJoinSubmitting(true)
+		try {
+			await createJoinRequest({
+				teamId: joinRequestTeam.id,
+				message: joinMessage.trim() || undefined
+			})
+			toast.success('Join request submitted')
+			setJoinRequestTeam(null)
+			setJoinMessage('')
+		} catch (err) {
+			toast.error(
+				err instanceof Error ? err.message : 'Failed to submit request'
+			)
+		} finally {
+			setJoinSubmitting(false)
+		}
+	}
+
+	const handleLeave = async () => {
+		if (!leavingTeam) return
+		try {
+			await leaveTeamMutation({ teamId: leavingTeam.id })
+			toast.success(`Left ${leavingTeam.name}`)
+			setLeavingTeam(null)
+			queryClient.invalidateQueries({ queryKey: ['user-teams'] })
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : 'Failed to leave team')
+		}
+	}
 
 	const columns = useMemo<ColumnDef<Team, unknown>[]>(
-		() => [
-			{
-				accessorKey: 'name',
-				header: ({ column }) => <SortableHeader column={column} label="Name" />,
-				cell: ({ row }) => (
-					<div className="font-medium">{row.getValue('name')}</div>
-				)
-			},
-			{
-				accessorKey: 'id',
-				header: 'ID',
-				cell: ({ row }) => (
-					<code className="text-xs bg-muted px-1 py-0.5 rounded">
-						{row.getValue('id')}
-					</code>
-				)
-			},
-			{
-				accessorKey: 'createdAt',
-				header: ({ column }) => (
-					<SortableHeader column={column} label="Created" />
-				),
-				cell: ({ row }) => {
-					const date = new Date(row.getValue('createdAt'))
-					return (
-						<span className="text-muted-foreground whitespace-nowrap">
-							{date.toLocaleDateString()}
-						</span>
+		() => {
+			const base: ColumnDef<Team, unknown>[] = [
+				{
+					accessorKey: 'name',
+					header: ({ column }) => (
+						<SortableHeader column={column} label="Name" />
+					),
+					cell: ({ row }) => (
+						<div className="font-medium">{row.getValue('name')}</div>
 					)
-				}
-			},
-			{
-				id: 'actions',
-				enableSorting: false,
-				header: () => <div className="text-right">Actions</div>,
-				cell: ({ row }) => {
-					const team = row.original
-					return (
-						<div className="text-right">
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" className="h-8 w-8 p-0">
-										<span className="sr-only">Open menu</span>
-										<MoreHorizontal className="h-4 w-4" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="end">
-									<DropdownMenuLabel>Actions</DropdownMenuLabel>
-									<DropdownMenuItem onClick={() => setEditingTeam(team)}>
-										Edit Team
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem
-										className="text-destructive"
-										onClick={() => setDeletingTeamId(team.id)}
-									>
-										Delete Team
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-						</div>
+				},
+				{
+					accessorKey: 'id',
+					header: 'ID',
+					cell: ({ row }) => (
+						<code className="text-xs bg-muted px-1 py-0.5 rounded">
+							{row.getValue('id')}
+						</code>
 					)
+				},
+				{
+					accessorKey: 'createdAt',
+					header: ({ column }) => (
+						<SortableHeader column={column} label="Created" />
+					),
+					cell: ({ row }) => {
+						const date = new Date(row.getValue('createdAt'))
+						return (
+							<span className="text-muted-foreground whitespace-nowrap">
+								{date.toLocaleDateString()}
+							</span>
+						)
+					}
+				},
+				{
+					id: 'membership-status',
+					header: 'Your Status',
+					cell: ({ row }) => {
+						const status = statuses?.[row.original.id] ?? 'none'
+						if (status === 'leader') return <Badge>Leader</Badge>
+						if (status === 'member')
+							return <Badge variant="secondary">Member</Badge>
+						if (status === 'pending')
+							return <Badge variant="outline">Pending</Badge>
+						return <span className="text-muted-foreground text-sm">—</span>
+					}
+				},
+				{
+					id: 'membership-actions',
+					header: '',
+					cell: ({ row }) => {
+						const team = row.original
+						const status = statuses?.[team.id] ?? 'none'
+
+						if (status === 'none') {
+							return (
+								<Button
+									size="sm"
+									variant="outline"
+									onClick={() => setJoinRequestTeam(team)}
+								>
+									Request to Join
+								</Button>
+							)
+						}
+						if (status === 'pending') {
+							const requestId = pendingRequestIdByTeam[team.id]
+							return (
+								<Button
+									size="sm"
+									variant="outline"
+									disabled={!requestId}
+									onClick={async () => {
+										if (!requestId) return
+										try {
+											await cancelJoinRequest({ requestId })
+											toast.success('Request cancelled')
+										} catch (err) {
+											toast.error(
+												err instanceof Error
+													? err.message
+													: 'Failed to cancel request'
+											)
+										}
+									}}
+								>
+									Cancel Request
+								</Button>
+							)
+						}
+						if (status === 'leader') {
+							return (
+								<Button size="sm" onClick={() => setManagingTeam(team)}>
+									Manage
+								</Button>
+							)
+						}
+						return (
+							<Button
+								size="sm"
+								variant="outline"
+								onClick={() => setLeavingTeam(team)}
+							>
+								Leave
+							</Button>
+						)
+					}
 				}
+			]
+
+			if (isAdmin) {
+				base.push({
+					id: 'actions',
+					enableSorting: false,
+					header: () => <div className="text-right">Actions</div>,
+					cell: ({ row }) => {
+						const team = row.original
+						return (
+							<div className="text-right">
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button variant="ghost" className="h-8 w-8 p-0">
+											<span className="sr-only">Open menu</span>
+											<MoreHorizontal className="h-4 w-4" />
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end">
+										<DropdownMenuLabel>Actions</DropdownMenuLabel>
+										<DropdownMenuItem onClick={() => setEditingTeam(team)}>
+											Edit Team
+										</DropdownMenuItem>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem
+											className="text-destructive"
+											onClick={() => setDeletingTeamId(team.id)}
+										>
+											Delete Team
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							</div>
+						)
+					}
+				})
 			}
-		],
-		[]
+
+			return base
+		},
+		[statuses, pendingRequestIdByTeam, cancelJoinRequest, isAdmin]
 	)
 
 	const table = useReactTable({
@@ -275,10 +442,12 @@ export default function TeamsList() {
 						className="pl-9"
 					/>
 				</div>
-				<Button onClick={() => setIsCreateDialogOpen(true)}>
-					<Plus className="h-4 w-4 mr-2" />
-					Create Team
-				</Button>
+				{isAdmin && (
+					<Button onClick={() => setIsCreateDialogOpen(true)}>
+						<Plus className="h-4 w-4 mr-2" />
+						Create Team
+					</Button>
+				)}
 			</div>
 
 			<div className="rounded-md border">
@@ -329,6 +498,7 @@ export default function TeamsList() {
 				</Table>
 			</div>
 
+			{/* Create / Edit team dialogs */}
 			<TeamDialog
 				open={isCreateDialogOpen}
 				onOpenChange={setIsCreateDialogOpen}
@@ -351,6 +521,7 @@ export default function TeamsList() {
 				}}
 			/>
 
+			{/* Delete team confirmation */}
 			<Dialog
 				open={!!deletingTeamId}
 				onOpenChange={(open) => !open && setDeletingTeamId(null)}
@@ -379,6 +550,88 @@ export default function TeamsList() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* Join request dialog */}
+			<Dialog
+				open={!!joinRequestTeam}
+				onOpenChange={(open) => {
+					if (!open) {
+						setJoinRequestTeam(null)
+						setJoinMessage('')
+					}
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Request to Join {joinRequestTeam?.name}</DialogTitle>
+						<DialogDescription>
+							A team leader will review your request.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3 py-2">
+						<div className="space-y-1.5">
+							<Label htmlFor="join-message">Message (optional)</Label>
+							<Textarea
+								id="join-message"
+								value={joinMessage}
+								onChange={(e) => setJoinMessage(e.target.value)}
+								placeholder="Tell the team leader why you'd like to join..."
+								rows={3}
+								disabled={joinSubmitting}
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => {
+								setJoinRequestTeam(null)
+								setJoinMessage('')
+							}}
+							disabled={joinSubmitting}
+						>
+							Cancel
+						</Button>
+						<Button onClick={handleJoinRequestSubmit} disabled={joinSubmitting}>
+							{joinSubmitting ? 'Submitting...' : 'Submit Request'}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Leave team confirmation */}
+			<Dialog
+				open={!!leavingTeam}
+				onOpenChange={(open) => !open && setLeavingTeam(null)}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Leave {leavingTeam?.name}</DialogTitle>
+						<DialogDescription>
+							Are you sure you want to leave this team? You will need to request
+							to join again if you change your mind.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setLeavingTeam(null)}>
+							Cancel
+						</Button>
+						<Button variant="destructive" onClick={handleLeave}>
+							Leave Team
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Team manage panel (leaders only) */}
+			{managingTeam && (
+				<TeamManagePanel
+					open={!!managingTeam}
+					onOpenChange={(open) => !open && setManagingTeam(null)}
+					teamId={managingTeam.id}
+					teamName={managingTeam.name}
+				/>
+			)}
 		</div>
 	)
 }
