@@ -1,6 +1,7 @@
 import {
 	BookOpen,
 	Bot,
+	Building2,
 	ClubIcon,
 	Frame,
 	Map,
@@ -44,10 +45,11 @@ const data = {
 					title: 'Dashboard',
 					url: '/app'
 				},
-				{
-					title: 'Settings',
-					url: '#'
-				}
+			{
+				title: 'Settings',
+				url: '/app/organization',
+				search: { tab: 'settings' }
+			}
 			]
 		},
 		{
@@ -58,6 +60,10 @@ const data = {
 				{
 					title: 'Organization',
 					url: '/app/organization'
+				},
+				{
+					title: 'Browse Organizations',
+					url: '/app/browse-organizations'
 				}
 			]
 		}
@@ -113,6 +119,11 @@ const data = {
 			title: 'Organization',
 			url: '/app/organization',
 			icon: ClubIcon
+		},
+		{
+			title: 'Browse Organizations',
+			url: '/app/browse-organizations',
+			icon: Building2
 		},
 		{
 			title: 'Get Help',

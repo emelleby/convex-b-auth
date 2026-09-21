@@ -1,13 +1,50 @@
 import { betterAuth } from 'better-auth/minimal'
+import { APIError } from 'better-auth/api'
 import { createClient } from '@convex-dev/better-auth'
 import { convex } from '@convex-dev/better-auth/plugins'
 import { organization } from 'better-auth/plugins'
 import authConfig from '../auth.config'
-import { components } from '../_generated/api'
+import { components, internal } from '../_generated/api'
 import type { GenericCtx } from '@convex-dev/better-auth'
 import type { DataModel } from '../_generated/dataModel'
 import type { GenericActionCtx } from 'convex/server'
 import schema from './schema'
+
+// ---------------------------------------------------------------------------
+// RBAC helpers — used by the beforeUpdateMemberRole / beforeRemoveMember hooks
+// ---------------------------------------------------------------------------
+
+/** Returns the role string of a user within an org, or null if not a member. */
+async function getActorRole(
+  actionCtx: GenericActionCtx<DataModel>,
+  userId: string,
+  organizationId: string
+): Promise<string | null> {
+  const m = (await actionCtx.runQuery(components.betterAuth.adapter.findOne, {
+    model: 'member',
+    where: [
+      { field: 'userId', value: userId },
+      { field: 'organizationId', value: organizationId, connector: 'AND' as const },
+    ],
+  })) as { role: string } | null
+  return m?.role ?? null
+}
+
+/** Returns the number of members with the 'owner' role in an org. */
+async function countOwners(
+  actionCtx: GenericActionCtx<DataModel>,
+  organizationId: string
+): Promise<number> {
+  const result = (await actionCtx.runQuery(components.betterAuth.adapter.findMany, {
+    model: 'member',
+    where: [
+      { field: 'organizationId', value: organizationId },
+      { field: 'role', value: 'owner', connector: 'AND' as const },
+    ],
+    paginationOpts: { numItems: 100, cursor: null },
+  } as any)) as any
+  return result.page?.length ?? 0
+}
 
 // Use the local schema so the component adapter validators include
 // organization plugin tables (member, organization, invitation, team, teamMember).
@@ -36,10 +73,21 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) => ({
         maximumTeams: 10,
       },
       membershipLimit: 100,
+      // Organization creation is open to all authenticated users.
+      // Features within an org (member limits, advanced tools) are gated
+      // on the org's own subscription plan via useSubscription().
       organizationHooks: {
         afterCreateOrganization: async ({ organization }) => {
           if ('runMutation' in ctx) {
             const actionCtx = ctx as unknown as GenericActionCtx<DataModel>;
+
+            // Seed a free subscription for the newly created org so that
+            // useSubscription() always returns a defined plan immediately.
+            await actionCtx.runMutation(
+              internal.subscription.createFreeSubscription,
+              { organizationId: organization.id }
+            );
+
             // Get all teams for this org to find the auto-created default one
             const teamsPaginated = (await actionCtx.runQuery(components.betterAuth.adapter.findMany, {
               model: "team", 
@@ -59,64 +107,76 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) => ({
             }
           }
         },
+        /**
+         * RBAC invariant: block role changes that would violate ownership rules.
+         *
+         * Rules enforced:
+         *  1. Admins cannot change the role of an owner.
+         *  2. The last owner cannot be demoted (prevents org lockout).
+         */
+        beforeUpdateMemberRole: async ({ member, newRole, user, organization }) => {
+          if (!('runQuery' in ctx)) return
+          const actionCtx = ctx as unknown as GenericActionCtx<DataModel>
+
+          const actorRole = await getActorRole(actionCtx, user.id, organization.id)
+
+          // Rule 1: admins cannot touch an owner's role
+          if (actorRole === 'admin' && member.role === 'owner') {
+            throw new APIError('FORBIDDEN', {
+              message: "Admins cannot change the role of an owner.",
+            })
+          }
+
+          // Rule 2: cannot demote the only remaining owner
+          if (member.role === 'owner' && newRole !== 'owner') {
+            const ownerCount = await countOwners(actionCtx, organization.id)
+            if (ownerCount <= 1) {
+              throw new APIError('BAD_REQUEST', {
+                message: "Cannot demote the only owner. Transfer ownership to another member first.",
+              })
+            }
+          }
+        },
+
+        /**
+         * RBAC invariant: block removals that would violate ownership rules.
+         *
+         * Rules enforced:
+         *  1. Admins cannot remove an owner.
+         *  2. The last owner cannot be removed (prevents org lockout).
+         */
+        beforeRemoveMember: async ({ member, user, organization }) => {
+          if (!('runQuery' in ctx)) return
+          const actionCtx = ctx as unknown as GenericActionCtx<DataModel>
+
+          const actorRole = await getActorRole(actionCtx, user.id, organization.id)
+
+          // Rule 1: admins cannot remove an owner
+          if (actorRole === 'admin' && member.role === 'owner') {
+            throw new APIError('FORBIDDEN', {
+              message: "Admins cannot remove an owner.",
+            })
+          }
+
+          // Rule 2: cannot remove the only remaining owner
+          if (member.role === 'owner') {
+            const ownerCount = await countOwners(actionCtx, organization.id)
+            if (ownerCount <= 1) {
+              throw new APIError('BAD_REQUEST', {
+                message: "Cannot remove the only owner of an organization.",
+              })
+            }
+          }
+        },
+
         beforeDeleteOrganization: async ({ organization }) => {
           if ('runMutation' in ctx) {
             const actionCtx = ctx as unknown as GenericActionCtx<DataModel>;
-
-            // Collect ALL teams for this org using a paginated loop.
-            // Note: this app limits orgs to maximumTeams:10, so a single page
-            // is always sufficient in practice. The loop guards against that
-            // limit being raised without updating this code.
-            const allTeams: any[] = [];
-            let teamCursor: string | null = null;
-            do {
-              const teamPage = (await actionCtx.runQuery(
-                components.betterAuth.adapter.findMany,
-                {
-                  model: 'team',
-                  where: [{ field: 'organizationId', value: organization.id }],
-                  paginationOpts: { numItems: 100, cursor: teamCursor },
-                } as any,
-              )) as any;
-              allTeams.push(...(teamPage.page ?? []));
-              teamCursor = teamPage.continueCursor ?? null;
-            } while (teamCursor);
-
-            // For each team, delete ALL teamMember records using a paginated
-            // loop. A team could exceed 100 members, so a single deleteMany
-            // call is insufficient.
-            for (const team of allTeams) {
-              let memberCursor: string | null = null;
-              do {
-                const result = (await actionCtx.runMutation(
-                  components.betterAuth.adapter.deleteMany,
-                  {
-                    input: {
-                      model: 'teamMember',
-                      where: [{ field: 'teamId', value: team._id as any }],
-                    },
-                    paginationOpts: { numItems: 100, cursor: memberCursor },
-                  } as any,
-                )) as any;
-                memberCursor = result.continueCursor ?? null;
-              } while (memberCursor);
-            }
-
-            // Delete ALL teams for this org using a paginated loop.
-            let deleteCursor: string | null = null;
-            do {
-              const result = (await actionCtx.runMutation(
-                components.betterAuth.adapter.deleteMany,
-                {
-                  input: {
-                    model: 'team',
-                    where: [{ field: 'organizationId', value: organization.id as any }],
-                  },
-                  paginationOpts: { numItems: 100, cursor: deleteCursor },
-                } as any,
-              )) as any;
-              deleteCursor = result.continueCursor ?? null;
-            } while (deleteCursor);
+            await actionCtx.scheduler.runAfter(
+              0,
+              internal.orgCleanup.cleanupOrgTeams,
+              { organizationId: organization.id },
+            );
           }
         },
       },

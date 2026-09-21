@@ -17,13 +17,14 @@ A modern, type-safe full-stack starter built with [TanStack Start](https://tanst
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | React 18, TanStack Router, TanStack Start |
+| **Frontend** | React 19, TanStack Router, TanStack Start |
 | **Database** | Convex (Real-time, Document-based) |
 | **Auth** | Better Auth + Convex Adapter |
 | **I18n** | ParaglideJS + Inlang |
 | **Forms** | TanStack Form + Zod |
 | **Styling** | Tailwind CSS v4, Lucide React, Radix UI |
 | **Runtime** | Bun |
+| **Package Manager** | Bun |
 
 ## 🏁 Getting Started
 

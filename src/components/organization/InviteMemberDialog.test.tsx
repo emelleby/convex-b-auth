@@ -43,10 +43,12 @@ interface MockUseAppFormOptions {
 	}) => void
 }
 
-const { toastSuccessMock, toastErrorMock } = vi.hoisted(() => ({
-	toastSuccessMock: vi.fn(),
-	toastErrorMock: vi.fn()
-}))
+const { toastSuccessMock, toastErrorMock, patchInvitationExpiryMock } =
+	vi.hoisted(() => ({
+		toastSuccessMock: vi.fn(),
+		toastErrorMock: vi.fn(),
+		patchInvitationExpiryMock: vi.fn()
+	}))
 
 vi.mock('sonner', () => ({
 	toast: {
@@ -88,6 +90,14 @@ vi.mock('@tanstack/react-query', async () => {
 		})
 	}
 })
+
+// The dialog reads the org's invitation-validity setting via Convex and patches
+// it on submit. Neither is under test here, so stub both rather than standing up
+// a ConvexProvider — without this, useQuery throws "Could not find Convex client!".
+vi.mock('convex/react', () => ({
+	useQuery: () => ({ invitationValidityDays: 365 }),
+	useMutation: () => patchInvitationExpiryMock
+}))
 
 vi.mock('@/components/ui/dialog', async () => {
 	const React = await import('react')

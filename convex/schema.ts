@@ -21,12 +21,52 @@ export default defineSchema({
     userId: v.string(),
     organizationId: v.string(),
     message: v.optional(v.string()),
-    status: v.string(), // 'pending' | 'approved' | 'rejected'
+    status: v.string(), // 'pending' | 'approved' | 'rejected' | 'cancelled' | 'expired'
     reviewedBy: v.optional(v.string()),
     reviewedAt: v.optional(v.number()),
+    expiresAt: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index('by_organizationId', ['organizationId'])
     .index('by_userId', ['userId'])
     .index('by_status_and_organizationId', ['status', 'organizationId']),
+  notification: defineTable({
+    userId: v.string(),
+    type: v.string(), // 'join_request_approved' | 'join_request_rejected'
+    message: v.string(),
+    read: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index('by_userId', ['userId'])
+    .index('by_userId_and_read', ['userId', 'read']),
+  orgSettings: defineTable({
+    organizationId: v.string(),
+    invitationValidityDays: v.number(),
+    joinRequestExpiryDays: v.optional(v.number()),
+  })
+    .index('by_organizationId', ['organizationId']),
+  subscription: defineTable({
+    organizationId: v.string(),                // one subscription per org
+    plan: v.string(),                          // 'free' | 'pro'
+    status: v.string(),                        // 'active' | 'canceled' | 'past_due' | 'trialing'
+    stripeCustomerId: v.optional(v.string()),  // Stripe customer for the org
+    stripeSubscriptionId: v.optional(v.string()),
+    currentPeriodStart: v.number(),
+    currentPeriodEnd: v.number(),
+  })
+    .index('by_organizationId', ['organizationId'])
+    .index('by_stripeCustomerId', ['stripeCustomerId']),
+  // teamMember and team are BA-managed (convex/betterAuth/schema.ts). Do not re-define them.
+  teamJoinRequest: defineTable({
+    teamId: v.string(),
+    userId: v.string(),
+    status: v.string(), // 'pending' | 'approved' | 'rejected' | 'cancelled'
+    message: v.optional(v.string()),
+    createdAt: v.number(),
+    reviewedAt: v.optional(v.number()),
+    reviewedBy: v.optional(v.string()),
+  })
+    .index('by_teamId', ['teamId'])
+    .index('by_userId', ['userId'])
+    .index('by_status_and_teamId', ['status', 'teamId']),
 })

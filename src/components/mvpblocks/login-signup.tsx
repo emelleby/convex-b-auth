@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -263,19 +262,20 @@ export default function LoginSignupForm({
 									transition={{ duration: 0.5, delay: 1.0, ease: "easeOut" }}
 								>
 									By signing in you agree to our{" "}
-									<Link
-										to="/terms-of-service"
+									{/* Plain anchors: these are placeholder legal pages, not app routes. */}
+									<a
+										href="/terms-of-service"
 										className="text-muted-foreground hover:text-primary underline"
 									>
 										terms of service
-									</Link>{" "}
+									</a>{" "}
 									and{" "}
-									<Link
-										to="#"
+									<a
+										href="/privacy-policy"
 										className="text-muted-foreground hover:text-primary underline"
 									>
 										privacy policy
-									</Link>
+									</a>
 									.
 								</motion.p>
 							</CardContent>

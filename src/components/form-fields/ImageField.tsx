@@ -8,15 +8,26 @@ import {
 	FieldLabel
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import type { useImageUpload } from '@/hooks/use-image-upload'
 import { cn } from '@/lib/utils'
+
+// Structural type for the image-upload state this field consumes. Declared
+// here rather than imported so the component stays self-contained — the
+// caller supplies anything matching this shape.
+interface ImageUpload {
+	previewUrl: string | null
+	fileName: string | null
+	fileInputRef: React.RefObject<HTMLInputElement | null>
+	handleThumbnailClick: () => void
+	handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+	handleRemove: () => void
+}
 
 interface ImageFieldProps {
 	field: any
 	label: string
 	description?: string
 	disabled?: boolean
-	imageUpload: ReturnType<typeof useImageUpload>
+	imageUpload: ImageUpload
 }
 
 export function ImageField({

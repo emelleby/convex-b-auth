@@ -21,6 +21,7 @@ export interface LanguageSwitcherProps {
 	onChange?: (code: string) => void | Promise<void>;
 	className?: string;
 	showIcon?: boolean;
+	size?: "default" | "sm" | "lg" | "icon";
 }
 
 export function LanguageSwitcher({
@@ -31,6 +32,7 @@ export function LanguageSwitcher({
 	onChange,
 	className,
 	showIcon = false,
+	size = "sm",
 }: LanguageSwitcherProps) {
 	const currentLanguage = languages.find((lang) => lang.code === value);
 	const displayLabel =
@@ -39,7 +41,7 @@ export function LanguageSwitcher({
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button variant={variant} size="sm" className={cn("gap-2", className)}>
+				<Button variant={variant} size={size} className={cn("gap-2", className)}>
 					{showIcon ? <Globe className="size-4" /> : displayLabel}
 					{!showIcon && <ChevronDown className="size-4" />}
 				</Button>
