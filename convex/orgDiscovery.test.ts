@@ -1,15 +1,68 @@
 /// <reference types="vite/client" />
 import { convexTest } from 'convex-test'
-import { expect, test, describe, beforeEach } from 'vitest'
+import { expect, test, describe } from 'vitest'
 import { api, components } from './_generated/api'
-import schema from './betterAuth/schema' // Use the betterAuth schema for these tables
+import schema from './schema'
+import componentSchema from './betterAuth/schema'
 
 const modules = import.meta.glob('./**/*.ts')
+const componentModules = import.meta.glob('./betterAuth/**/*.ts')
+
+// organization/member/user live in the betterAuth component, not the app
+// schema, so the component must be registered before any adapter call —
+// otherwise convex-test throws 'Component "betterAuth" is not registered'.
+function setup() {
+  const t = convexTest(schema, modules)
+  t.registerComponent('betterAuth', componentSchema, componentModules)
+  return t
+}
+
+const create = (t: any, model: string, data: Record<string, unknown>) =>
+  t.mutation((components as any).betterAuth.adapter.create as any, {
+    input: { model, data },
+  } as any)
+
+/**
+ * Creates a user + live session and returns a test client acting as them.
+ *
+ * Better Auth's getAuthUser resolves the caller in two steps: it finds the
+ * session by `_id === identity.sessionId` (rejecting expired ones), then the
+ * user by `_id === identity.subject`. An identity missing either id fails
+ * before any handler code runs, so both records must exist.
+ */
+async function signIn(t: any, name: string, email: string) {
+  const now = Date.now()
+  const user = await create(t, 'user', {
+    name,
+    email,
+    emailVerified: true,
+    createdAt: now,
+    updatedAt: now,
+  })
+  const userId = (user as any)._id
+
+  const session = await create(t, 'session', {
+    userId,
+    token: `token-${userId}`,
+    expiresAt: now + 60 * 60 * 1000,
+    createdAt: now,
+    updatedAt: now,
+  })
+
+  return {
+    userId,
+    asUser: t.withIdentity({
+      subject: userId,
+      sessionId: (session as any)._id,
+      email,
+    }),
+  }
+}
 
 describe('orgDiscovery', () => {
   test('searchPublicOrganizations filters correctly', async () => {
-    const t = convexTest(schema, modules)
-    
+    const t = setup()
+
     // 1. Create some organizations
     const org1 = await t.mutation((components as any).betterAuth.adapter.create as any, {
       input: {
@@ -24,7 +77,7 @@ describe('orgDiscovery', () => {
     } as any)
     const org1Id = (org1 as any)._id
 
-    const org2 = await t.mutation((components as any).betterAuth.adapter.create as any, {
+    await t.mutation((components as any).betterAuth.adapter.create as any, {
       input: {
         model: 'organization',
         data: {
@@ -35,27 +88,12 @@ describe('orgDiscovery', () => {
         },
       },
     } as any)
-    const org2Id = (org2 as any)._id
 
     // 2. Set up a user
-    const userId = 'user-1'
-    const userEmail = 'test@example.com'
-    await t.mutation((components as any).betterAuth.adapter.create as any, {
-      input: {
-        model: 'user',
-        data: {
-          name: 'Test User',
-          email: userEmail,
-          emailVerified: true,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        },
-      },
-    } as any)
-    t.withIdentity({ subject: userId, tokenIdentifier: userId, email: userEmail })
+    const { userId, asUser } = await signIn(t, 'Test User', 'test@example.com')
 
     // 3. Search - should only see Public Org
-    const results = await t.query(api.orgDiscovery.searchPublicOrganizations, {})
+    const results = await asUser.query(api.orgDiscovery.searchPublicOrganizations, {})
     expect(results).toHaveLength(1)
     expect(results[0].name).toBe('Public Org')
 
@@ -72,13 +110,16 @@ describe('orgDiscovery', () => {
       },
     } as any)
 
-    const resultsAfterJoin = await t.query(api.orgDiscovery.searchPublicOrganizations, {})
+    const resultsAfterJoin = await asUser.query(
+      api.orgDiscovery.searchPublicOrganizations,
+      {}
+    )
     expect(resultsAfterJoin).toHaveLength(0)
   })
 
   test('getPublicOrganizationProfile returns correct info', async () => {
-    const t = convexTest(schema, modules)
-    
+    const t = setup()
+
     const org = await t.mutation((components as any).betterAuth.adapter.create as any, {
       input: {
         model: 'organization',
@@ -105,26 +146,13 @@ describe('orgDiscovery', () => {
       },
     } as any)
 
-    // Add user u3
-    const u3Id = 'u3'
-    const u3Email = 'u3@example.com'
-    await t.mutation((components as any).betterAuth.adapter.create as any, {
-      input: {
-        model: 'user',
-        data: {
-          name: 'User 3',
-          email: u3Email,
-          emailVerified: true,
-          createdAt: Date.now(),
-        },
-      },
-    } as any)
+    // Add a third user, who is not a member, and view the org as them.
+    const { asUser: asU3 } = await signIn(t, 'User 3', 'u3@example.com')
 
-    t.withIdentity({ subject: u3Id, tokenIdentifier: u3Id, email: u3Email })
-
-    const profile = await t.query(api.orgDiscovery.getPublicOrganizationProfile, {
-      organizationId: orgId,
-    })
+    const profile = await asU3.query(
+      api.orgDiscovery.getPublicOrganizationProfile,
+      { organizationId: orgId }
+    )
 
     expect(profile.name).toBe('Test Org')
     expect(profile.memberCount).toBe(2)

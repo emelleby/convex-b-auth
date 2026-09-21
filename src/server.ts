@@ -8,7 +8,7 @@ const handler = createStartHandler(defaultStreamHandler)
 
 export default {
 	async fetch(req: Request): Promise<Response> {
-		return paraglideMiddleware(req, ({ locale }) => {
+		return paraglideMiddleware(req, () => {
 			// TanStack Router handles URL rewriting via deLocalizeUrl/localizeUrl,
 			// so we pass the original `req` to the handler instead of the
 			// delocalized `request` from the middleware callback.

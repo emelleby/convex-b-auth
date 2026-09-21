@@ -45,10 +45,11 @@ const data = {
 					title: 'Dashboard',
 					url: '/app'
 				},
-				{
-					title: 'Settings',
-					url: '#'
-				}
+			{
+				title: 'Settings',
+				url: '/app/organization',
+				search: { tab: 'settings' }
+			}
 			]
 		},
 		{

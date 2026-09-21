@@ -15,8 +15,10 @@ import {
 	CardHeader,
 	CardTitle
 } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useOrgRole } from '@/hooks/useOrgRole'
+import { useSubscription } from '@/hooks/useSubscription'
 import { authClient } from '@/lib/auth-client'
 
 const tabSchema = z.enum([
@@ -40,6 +42,7 @@ function OrganizationPage() {
 	const navigate = useNavigate({ from: Route.fullPath })
 	const { isAdmin, isOwner } = useOrgRole()
 	const canManage = isAdmin || isOwner
+	const { plan, status, isPro, isLoading } = useSubscription()
 
 	if (isPending) {
 		return (
@@ -120,11 +123,31 @@ function OrganizationPage() {
 							<CardTitle>Organization Overview</CardTitle>
 							<CardDescription>Quick stats and information</CardDescription>
 						</CardHeader>
-						<CardContent>
-							<p>Organization ID: {activeOrg.id}</p>
-							<p>Slug: {activeOrg.slug}</p>
-							{/* TODO: Add member count, team count stats */}
-						</CardContent>
+					<CardContent>
+						<p>Organization ID: {activeOrg.id}</p>
+						<p>Slug: {activeOrg.slug}</p>
+						<div className="flex items-center gap-2">
+							<span>Subscription:</span>
+							{isLoading ? (
+								<span className="text-muted-foreground text-sm">Loading…</span>
+							) : (
+								<>
+									<Badge
+										variant={isPro ? 'default' : 'secondary'}
+										className="capitalize"
+									>
+										{plan}
+									</Badge>
+									{status !== 'active' && (
+										<Badge variant="destructive" className="capitalize">
+											{status}
+										</Badge>
+									)}
+								</>
+							)}
+						</div>
+						{/* TODO: Add member count, team count stats */}
+					</CardContent>
 					</Card>
 				</TabsContent>
 

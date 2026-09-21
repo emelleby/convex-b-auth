@@ -30,6 +30,7 @@ export function NavMain({
     items?: {
       title: string
       url: string
+      search?: Record<string, unknown>
     }[]
   }[]
 }) {
@@ -57,7 +58,7 @@ export function NavMain({
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
-                        <Link to={subItem.url as any}>
+                        <Link to={subItem.url as any} search={subItem.search as any}>
                           <span>{subItem.title}</span>
                         </Link>
                       </SidebarMenuSubButton>

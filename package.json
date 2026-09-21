@@ -10,6 +10,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "typecheck": "tsc --noEmit",
     "deploy": "bun run build && wrangler deploy",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",

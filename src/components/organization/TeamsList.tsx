@@ -238,7 +238,9 @@ export default function TeamsList() {
 			await leaveTeamMutation({ teamId: leavingTeam.id })
 			toast.success(`Left ${leavingTeam.name}`)
 			setLeavingTeam(null)
-			queryClient.invalidateQueries({ queryKey: ['user-teams'] })
+			queryClient.invalidateQueries({
+				queryKey: ['organization-teams', activeOrg?.id]
+			})
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : 'Failed to leave team')
 		}

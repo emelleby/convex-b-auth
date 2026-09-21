@@ -211,9 +211,9 @@ export default function OrgSettings() {
 							value={name}
 							onChange={(e) => setName(e.target.value)}
 							placeholder="My Organization"
-							disabled={!canManage}
+							disabled={!isAdmin}
 						/>
-						{!canManage && (
+						{!isAdmin && (
 							<p className="text-xs text-muted-foreground">
 								Only admins and owners can edit organization settings.
 							</p>
@@ -227,14 +227,14 @@ export default function OrgSettings() {
 							value={slug}
 							onChange={(e) => setSlug(e.target.value)}
 							placeholder="my-organization"
-							disabled={!canManage}
+							disabled={!isAdmin}
 						/>
 						<p className="text-xs text-muted-foreground">
 							Used in URLs. Only lowercase letters, numbers, and hyphens.
 						</p>
 					</div>
 
-					<Button onClick={handleSave} disabled={isSaving || !canManage}>
+					<Button onClick={handleSave} disabled={isSaving || !isAdmin}>
 						<Save className="h-4 w-4 mr-2" />
 						{isSaving ? 'Saving...' : 'Save Changes'}
 					</Button>

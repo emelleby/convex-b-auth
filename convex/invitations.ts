@@ -1,6 +1,6 @@
 import { query } from './_generated/server'
 import { v } from 'convex/values'
-import { getOptionalAuth, requireAuth } from './auth_helpers'
+import { getOptionalAuth } from './auth_helpers'
 import { hasOrgRole } from './permissions'
 import { components } from './_generated/api'
 

@@ -15,3 +15,6 @@ graphify-out/cache
 src/routeTree.gen.ts
 .venv
 convex/_generated/api.d.ts
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
