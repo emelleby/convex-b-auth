@@ -79,7 +79,6 @@ When working on Convex code, **always read
 how to correctly use Convex APIs and patterns. The file contains rules that
 override what you may have learned about Convex from training data.
 
-There are also Convex agent skills for common tasks that provide additional guidance. Check for relevant skills when working with Convex.
 Convex agent skills for common tasks can be installed by running
 `npx convex ai-files install`.
 

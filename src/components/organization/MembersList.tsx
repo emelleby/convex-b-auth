@@ -58,7 +58,6 @@ import {
 	Table,
 	TableBody,
 	TableCell,
-	TableFooter,
 	TableHead,
 	TableHeader,
 	TableRow
@@ -563,7 +562,7 @@ export default function MembersList() {
 							</TableRow>
 						)}
 					</TableBody>
-					<TableFooter>We should hide the email in production.</TableFooter>
+					{/* TODO: We should hide the email in production. */}
 				</Table>
 			</div>
 
