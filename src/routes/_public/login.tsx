@@ -90,6 +90,17 @@ function LoginPage() {
 		}
 	}
 
+	// Redirect to /app if already authenticated
+	useEffect(() => {
+		if (!isPending && isAuthenticated) {
+			const redirectTo =
+				search.redirect && isSameOrigin(search.redirect)
+					? search.redirect
+					: "/app"
+			navigate({ to: redirectTo });
+		}
+	}, [isPending, isAuthenticated, navigate, search.redirect]);
+
 	// Show loading state while checking authentication
 	if (isPending) {
 		return (
@@ -97,16 +108,6 @@ function LoginPage() {
 				<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
 			</div>
 		)
-	}
-
-	// Don't render the form if already authenticated (will redirect via router)
-	if (isAuthenticated) {
-		const redirectTo =
-			search.redirect && isSameOrigin(search.redirect)
-				? search.redirect
-				: "/app"
-		navigate({ to: redirectTo });
-		return null;
 	}
 
 	return (

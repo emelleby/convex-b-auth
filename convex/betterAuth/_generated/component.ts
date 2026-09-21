@@ -1332,6 +1332,20 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         any,
         Name
       >;
+      getById: FunctionReference<
+        "query",
+        "internal",
+        { id: string; model: string },
+        any,
+        Name
+      >;
+      search: FunctionReference<
+        "query",
+        "internal",
+        { limit: number; model: string; query: string },
+        any,
+        Name
+      >;
       updateMany: FunctionReference<
         "mutation",
         "internal",

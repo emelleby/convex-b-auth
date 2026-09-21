@@ -17,6 +17,7 @@ import {
 	SidebarMenuItem,
 	useSidebar
 } from '@/components/ui/sidebar'
+import { getRememberedSelection, rememberOrg } from '@/lib/active-selection'
 import { authClient } from '@/lib/auth-client'
 
 /**
@@ -92,15 +93,23 @@ function useOrgSync() {
 		return organizations.some((o) => o.id === activeOrg.id) ? activeOrg : null
 	}, [activeOrg, organizations])
 
-	// Auto-select the first org when fresh data shows orgs exist but none is
-	// active. Runs only after the refetch guard clears to avoid stale-data calls.
+	// Auto-select the remembered org (fallback: first org) when fresh data
+	// shows orgs exist but none is active. Runs only after the refetch guard
+	// clears to avoid stale-data calls.
 	React.useEffect(() => {
 		if (isSessionRefetching || !organizations?.length || validatedActiveOrg)
 			return
-		void authClient.organization.setActive({
-			organizationId: organizations[0].id
-		})
+		const remembered = getRememberedSelection()
+		const target =
+			organizations.find((o) => o.id === remembered.orgId) ?? organizations[0]
+		void authClient.organization.setActive({ organizationId: target.id })
 	}, [isSessionRefetching, organizations, validatedActiveOrg])
+
+	// Persist whichever org becomes active so the selection survives
+	// logout/login (activeOrganizationId resets with each new session).
+	React.useEffect(() => {
+		if (validatedActiveOrg?.id) rememberOrg(validatedActiveOrg.id)
+	}, [validatedActiveOrg?.id])
 
 	return {
 		isLoading:

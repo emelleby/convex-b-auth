@@ -150,7 +150,8 @@ export const tables = {
     updatedAt: v.optional(v.union(v.null(), v.number())),
   })
     .index("slug", ["slug"])
-    .index("name", ["name"]),
+    .index("name", ["name"])
+    .searchIndex("search_name", { searchField: "name" }),
 
   member: defineTable({
     organizationId: v.string(),

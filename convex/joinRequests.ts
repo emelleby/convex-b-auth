@@ -1,6 +1,7 @@
-import { mutation, query } from './_generated/server'
+import { mutation, query, internalMutation } from './_generated/server'
 import { v } from 'convex/values'
 import { requireAuth, getOptionalAuth } from './auth_helpers'
+import { canManageJoinRequests, hasOrgRole } from './permissions'
 import { components } from './_generated/api'
 
 // Generate a unique ID for joinRequest (which stores a custom id field)
@@ -11,6 +12,7 @@ function generateId(): string {
 /**
  * Create a join request for an organization.
  * Users can only have one pending request per organization.
+ * Sets expiresAt based on organization settings (defaults to 30 days).
  */
 export const createJoinRequest = mutation({
   args: {
@@ -53,6 +55,17 @@ export const createJoinRequest = mutation({
       throw new Error('You are already a member of this organization')
     }
 
+    // Fetch org settings to determine join request expiry
+    const settings = await ctx.db
+      .query('orgSettings')
+      .withIndex('by_organizationId', (q) =>
+        q.eq('organizationId', args.organizationId)
+      )
+      .first()
+
+    const expiryDays = settings?.joinRequestExpiryDays ?? 30
+    const expiresAt = Date.now() + expiryDays * 24 * 60 * 60 * 1000
+
     // Create the join request
     const id = generateId()
     await ctx.db.insert('joinRequest', {
@@ -61,6 +74,7 @@ export const createJoinRequest = mutation({
       organizationId: args.organizationId,
       message: args.message,
       status: 'pending',
+      expiresAt,
       createdAt: Date.now(),
     })
 
@@ -69,7 +83,8 @@ export const createJoinRequest = mutation({
 })
 
 /**
- * List all join requests made by the current user.
+ * List all join requests made by the current user (all statuses).
+ * Returns requests sorted by createdAt descending, with organization names and status labels.
  */
 export const listMyJoinRequests = query({
   args: {},
@@ -84,6 +99,24 @@ export const listMyJoinRequests = query({
       .order('desc')
       .collect()
 
+    // Helper function to generate human-readable status labels
+    const getStatusLabel = (status: string): string => {
+      switch (status) {
+        case 'pending':
+          return 'Pending'
+        case 'approved':
+          return 'Approved'
+        case 'rejected':
+          return 'Rejected'
+        case 'cancelled':
+          return 'Cancelled'
+        case 'expired':
+          return 'Expired'
+        default:
+          return 'Unknown'
+      }
+    }
+
     // Enrich with organization names via the Better Auth adapter.
     // Use `_id` (not `id`) and cast to `any` per AGENTS.md conventions.
     const enrichedRequests = await Promise.all(
@@ -96,6 +129,7 @@ export const listMyJoinRequests = query({
         return {
           ...request,
           organizationName: (org as { name?: string } | null)?.name ?? 'Unknown Organization',
+          statusLabel: getStatusLabel(request.status),
         }
       })
     )
@@ -120,17 +154,9 @@ export const listPendingJoinRequests = query({
     if (!user || !user._id) return []
     const userId = user._id as string
 
-    // Verify user is admin/owner of this organization (via betterAuth component)
-    const membership = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
-      model: 'member',
-      where: [
-        { field: 'userId', value: userId },
-        { field: 'organizationId', value: args.organizationId, connector: 'AND' as const },
-      ],
-    })) as { role: string } | null
-
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      throw new Error('Only organization admins can view join requests')
+    // Verify user is admin/owner of this organization
+    if (!await hasOrgRole(ctx, userId, args.organizationId, ['owner', 'admin'])) {
+      return []
     }
 
     const requests = await ctx.db
@@ -141,7 +167,23 @@ export const listPendingJoinRequests = query({
       .order('desc')
       .collect()
 
-    return requests
+    // Enrich each request with user name and email
+    const enriched = await Promise.all(
+      requests.map(async (request) => {
+        const userDoc = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
+          model: 'user',
+          where: [{ field: '_id', value: request.userId as any }],
+        })) as { name?: string; email?: string } | null
+
+        return {
+          ...request,
+          userName: userDoc?.name ?? 'Unknown User',
+          userEmail: userDoc?.email ?? '',
+        }
+      })
+    )
+
+    return enriched
   },
 })
 
@@ -174,18 +216,8 @@ export const approveJoinRequest = mutation({
       throw new Error('Request has already been processed')
     }
 
-    // Verify user is admin/owner (via betterAuth component)
-    const membership = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
-      model: 'member',
-      where: [
-        { field: 'userId', value: userId },
-        { field: 'organizationId', value: request.organizationId, connector: 'AND' as const },
-      ],
-    })) as { role: string } | null
-
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      throw new Error('Only organization admins can approve join requests')
-    }
+    // Verify user is admin/owner (throws ConvexError if not)
+    await canManageJoinRequests(ctx, request.organizationId)
 
     // Update request status
     await ctx.db.patch(request._id, {
@@ -205,6 +237,21 @@ export const approveJoinRequest = mutation({
           createdAt: Date.now(),
         },
       },
+    })
+
+    // Fetch org name for the notification message
+    const approvedOrg = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
+      model: 'organization',
+      where: [{ field: '_id', value: request.organizationId as any }],
+    })) as { name?: string } | null
+
+    // Notify the requester — same transaction as the status patch above
+    await ctx.db.insert('notification', {
+      userId: request.userId,
+      type: 'join_request_approved',
+      message: `Your join request to join ${approvedOrg?.name ?? 'the organization'} has been approved`,
+      read: false,
+      createdAt: Date.now(),
     })
 
     return { success: true }
@@ -239,18 +286,8 @@ export const rejectJoinRequest = mutation({
       throw new Error('Request has already been processed')
     }
 
-    // Verify user is admin/owner (via betterAuth component)
-    const membership = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
-      model: 'member',
-      where: [
-        { field: 'userId', value: userId },
-        { field: 'organizationId', value: request.organizationId, connector: 'AND' as const },
-      ],
-    })) as { role: string } | null
-
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      throw new Error('Only organization admins can reject join requests')
-    }
+    // Verify user is admin/owner (throws ConvexError if not)
+    await canManageJoinRequests(ctx, request.organizationId)
 
     await ctx.db.patch(request._id, {
       status: 'rejected',
@@ -258,12 +295,27 @@ export const rejectJoinRequest = mutation({
       reviewedAt: Date.now(),
     })
 
+    // Fetch org name for the notification message
+    const rejectedOrg = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
+      model: 'organization',
+      where: [{ field: '_id', value: request.organizationId as any }],
+    })) as { name?: string } | null
+
+    // Notify the requester — same transaction as the status patch above
+    await ctx.db.insert('notification', {
+      userId: request.userId,
+      type: 'join_request_rejected',
+      message: `Your join request to join ${rejectedOrg?.name ?? 'the organization'} has been rejected`,
+      read: false,
+      createdAt: Date.now(),
+    })
+
     return { success: true }
   },
 })
 
 /**
- * Cancel own pending join request.
+ * Cancel own pending join request (soft-delete with status change).
  */
 export const cancelJoinRequest = mutation({
   args: {
@@ -293,12 +345,47 @@ export const cancelJoinRequest = mutation({
       throw new Error('Only pending requests can be cancelled')
     }
 
-    await ctx.db.delete(request._id)
+    // Soft-delete: patch status to 'cancelled' instead of hard delete
+    await ctx.db.patch(request._id, {
+      status: 'cancelled',
+      reviewedAt: Date.now(),
+    })
 
     return { success: true }
   },
 })
 
+
+/**
+ * Internal mutation to expire stale join requests.
+ * Filters all pending requests and patches those past their expiresAt timestamp.
+ * Called by the daily cron job.
+ */
+export const expireStaleRequests = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    // Collect all pending requests using the index
+    const pending = await ctx.db
+      .query('joinRequest')
+      .withIndex('by_status_and_organizationId', (q) =>
+        q.eq('status', 'pending')
+      )
+      .collect()
+
+    const now = Date.now()
+    let expired = 0
+
+    // Filter in JavaScript and patch expired ones
+    for (const req of pending) {
+      if (req.expiresAt && req.expiresAt < now) {
+        await ctx.db.patch(req._id, { status: 'expired' })
+        expired++
+      }
+    }
+
+    return { expired }
+  },
+})
 
 export const countPendingJoinRequests = query({
   args: {
@@ -307,14 +394,14 @@ export const countPendingJoinRequests = query({
   handler: async (ctx, args) => {
     const user = await getOptionalAuth(ctx)
     if (!user || !user._id) return 0
-    
+
     const requests = await ctx.db
       .query('joinRequest')
       .withIndex('by_status_and_organizationId', (q) =>
         q.eq('status', 'pending').eq('organizationId', args.organizationId)
       )
       .collect()
-      
+
     return requests.length
   },
 })

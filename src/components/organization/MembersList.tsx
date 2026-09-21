@@ -21,6 +21,7 @@ import {
 	ArrowDown,
 	ArrowUp,
 	ArrowUpDown,
+	Crown,
 	MoreHorizontal,
 	Search
 } from 'lucide-react'
@@ -61,6 +62,7 @@ import {
 	TableHeader,
 	TableRow
 } from '@/components/ui/table'
+import { useOrgRole } from '@/hooks/useOrgRole'
 import { authClient } from '@/lib/auth-client'
 import { api } from '../../../convex/_generated/api'
 import InviteMemberDialog from './InviteMemberDialog'
@@ -160,12 +162,16 @@ function DebouncedInput({
 export default function MembersList() {
 	const { data: session } = authClient.useSession()
 	const { data: activeOrg } = authClient.useActiveOrganization()
+	const { isAdmin, isOwner } = useOrgRole()
 	const queryClient = useQueryClient()
 	const [removingMemberId, setRemovingMemberId] = useState<string | null>(null)
 	const [managingTeamsMember, setManagingTeamsMember] = useState<Member | null>(
 		null
 	)
 	const [togglingTeamId, setTogglingTeamId] = useState<string | null>(null)
+	const [transferringToMember, setTransferringToMember] =
+		useState<Member | null>(null)
+	const [isTransferring, setIsTransferring] = useState(false)
 	const [globalFilter, setGlobalFilter] = useState('')
 	const [selectedTeamId, setSelectedTeamId] = useState('all')
 	const [sorting, setSorting] = useState<SortingState>([])
@@ -263,150 +269,180 @@ export default function MembersList() {
 		[members, selectedTeamId, teamMembershipsMap]
 	)
 
-	const currentUserMember = members.find((m) => m.userId === session?.user?.id)
-	const isAdmin =
-		currentUserMember?.role === 'admin' || currentUserMember?.role === 'owner'
-
 	const errorMessage =
 		(error as Error | null)?.message ??
 		(removeMutation.error as Error | null)?.message ??
 		(changeRoleMutation.error as Error | null)?.message
 
 	const columns = useMemo<ColumnDef<Member, unknown>[]>(
-		() => [
-			{
-				id: 'name',
-				accessorFn: (row) => row.user.name || 'Unknown',
-				header: ({ column }) => <SortableHeader column={column} label="Name" />,
-				cell: ({ row }) => (
-					<div className="font-medium">
-						{row.original.user.name || 'Unknown'}
-						{row.original.userId === session?.user?.id && (
-							<span className="text-xs text-muted-foreground ml-1">(You)</span>
-						)}
-					</div>
-				),
-				filterFn: 'fuzzy',
-				sortingFn: fuzzySort as SortingFn<Member>
-			},
-			{
-				id: 'email',
-				accessorFn: (row) => row.user.email || '',
-				header: ({ column }) => (
-					<SortableHeader column={column} label="Email" />
-				),
-				cell: ({ row }) => (
-					<span className="text-muted-foreground">
-						{row.original.user.email || '—'}
-					</span>
-				)
-			},
-			{
-				id: 'role',
-				accessorFn: (row) => row.role,
-				header: ({ column }) => <SortableHeader column={column} label="Role" />,
-				cell: ({ row }) => (
-					<span className="inline-block px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium capitalize">
-						{row.original.role}
-					</span>
-				)
-			},
-			{
-				id: 'teams',
-				enableSorting: false,
-				enableGlobalFilter: false,
-				header: () => 'Teams',
-				cell: ({ row }) => {
-					const memberTeams = teamMembershipsMap?.[row.original.userId] ?? []
-					if (memberTeams.length === 0) {
-						return <span className="text-muted-foreground">—</span>
-					}
-					return (
-						<div className="flex flex-wrap gap-1">
-							{memberTeams.map((t) => (
-								<Badge key={t.id} variant="secondary" className="text-xs">
-									{t.name}
-								</Badge>
-							))}
+		() => {
+			const base: ColumnDef<Member, unknown>[] = [
+				{
+					id: 'name',
+					accessorFn: (row) => row.user.name || 'Unknown',
+					header: ({ column }) => (
+						<SortableHeader column={column} label="Name" />
+					),
+					cell: ({ row }) => (
+						<div className="font-medium">
+							{row.original.user.name || 'Unknown'}
+							{row.original.userId === session?.user?.id && (
+								<span className="text-xs text-muted-foreground ml-1">
+									(You)
+								</span>
+							)}
 						</div>
+					),
+					filterFn: 'fuzzy',
+					sortingFn: fuzzySort as SortingFn<Member>
+				},
+				{
+					id: 'email',
+					accessorFn: (row) => row.user.email || '',
+					header: ({ column }) => (
+						<SortableHeader column={column} label="Email" />
+					),
+					cell: ({ row }) => (
+						<span className="text-muted-foreground">
+							{row.original.user.email || '—'}
+						</span>
 					)
-				}
-			},
-			{
-				id: 'actions',
-				enableSorting: false,
-				enableGlobalFilter: false,
-				header: () => <div className="text-right">Actions</div>,
-				cell: ({ row }) => {
-					const member = row.original
-					if (
-						!isAdmin ||
-						member.role === 'owner' ||
-						member.userId === session?.user?.id
-					) {
-						return null
+				},
+				{
+					id: 'role',
+					accessorFn: (row) => row.role,
+					header: ({ column }) => (
+						<SortableHeader column={column} label="Role" />
+					),
+					cell: ({ row }) => (
+						<span className="inline-block px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium capitalize">
+							{row.original.role}
+						</span>
+					)
+				},
+				{
+					id: 'teams',
+					enableSorting: false,
+					enableGlobalFilter: false,
+					header: () => 'Teams',
+					cell: ({ row }) => {
+						const memberTeams = teamMembershipsMap?.[row.original.userId] ?? []
+						if (memberTeams.length === 0) {
+							return <span className="text-muted-foreground">—</span>
+						}
+						return (
+							<div className="flex flex-wrap gap-1">
+								{memberTeams.map((t) => (
+									<Badge key={t.id} variant="secondary" className="text-xs">
+										{t.name}
+									</Badge>
+								))}
+							</div>
+						)
 					}
-					return (
-						<div className="flex justify-end">
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" className="h-8 w-8 p-0">
-										<span className="sr-only">Open menu</span>
-										<MoreHorizontal className="h-4 w-4" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="end">
-									<DropdownMenuLabel>Actions</DropdownMenuLabel>
-									<DropdownMenuItem
-										onClick={() => setManagingTeamsMember(member)}
-									>
-										Manage Teams
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-										Change Role
-									</DropdownMenuLabel>
-									<DropdownMenuItem
-										disabled={member.role === 'admin'}
-										onClick={() =>
-											changeRoleMutation.mutate({
-												memberId: member.id,
-												role: 'admin'
-											})
-										}
-									>
-										Make Admin
-									</DropdownMenuItem>
-									<DropdownMenuItem
-										disabled={member.role === 'member'}
-										onClick={() =>
-											changeRoleMutation.mutate({
-												memberId: member.id,
-												role: 'member'
-											})
-										}
-									>
-										Make Member
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem
-										className="text-destructive"
-										onClick={() => setRemovingMemberId(member.id)}
-									>
-										Remove from organization
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-						</div>
-					)
 				}
+			]
+
+			if (isAdmin) {
+				base.push({
+					id: 'actions',
+					enableSorting: false,
+					enableGlobalFilter: false,
+					header: () => <div className="text-right">Actions</div>,
+					cell: ({ row }) => {
+						const member = row.original
+						if (member.userId === session?.user?.id) return null
+						if (!isOwner && member.role === 'owner') return null
+
+						return (
+							<div className="flex justify-end">
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button variant="ghost" className="h-8 w-8 p-0">
+											<span className="sr-only">Open menu</span>
+											<MoreHorizontal className="h-4 w-4" />
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end">
+										<DropdownMenuLabel>Actions</DropdownMenuLabel>
+										<DropdownMenuItem
+											onClick={() => setManagingTeamsMember(member)}
+										>
+											Manage Teams
+										</DropdownMenuItem>
+
+										{/* Role changes — hidden for owner targets */}
+										{member.role !== 'owner' && (
+											<>
+												<DropdownMenuSeparator />
+												<DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+													Change Role
+												</DropdownMenuLabel>
+												<DropdownMenuItem
+													disabled={member.role === 'admin'}
+													onClick={() =>
+														changeRoleMutation.mutate({
+															memberId: member.id,
+															role: 'admin'
+														})
+													}
+												>
+													Make Admin
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													disabled={member.role === 'member'}
+													onClick={() =>
+														changeRoleMutation.mutate({
+															memberId: member.id,
+															role: 'member'
+														})
+													}
+												>
+													Make Member
+												</DropdownMenuItem>
+											</>
+										)}
+
+										{/* Transfer Ownership — owner actor on admin target only */}
+										{isOwner && member.role === 'admin' && (
+											<>
+												<DropdownMenuSeparator />
+												<DropdownMenuItem
+													onClick={() => setTransferringToMember(member)}
+												>
+													<Crown className="h-4 w-4 mr-2" />
+													Transfer Ownership
+												</DropdownMenuItem>
+											</>
+										)}
+
+										<DropdownMenuSeparator />
+										<DropdownMenuItem
+											className="text-destructive"
+											onClick={() => setRemovingMemberId(member.id)}
+										>
+											Remove from organization
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							</div>
+						)
+					}
+				})
 			}
-		],
-		// changeRoleMutation.mutate is stable (useCallback in React Query v5).
-		// Listing the whole changeRoleMutation object would cause columns to
-		// rebuild every render because useMutation returns a new object reference
-		// on each render, which was the second half of the render-loop freeze.
-		[session?.user?.id, isAdmin, changeRoleMutation.mutate, teamMembershipsMap]
+
+			return base
+		},
+		// changeRoleMutation.mutate and setTransferringToMember are both stable
+		// references (React Query v5 useCallback + React useState setter).
+		// isOwner/isAdmin are primitives — safe to include directly.
+		[
+			session?.user?.id,
+			isAdmin,
+			isOwner,
+			changeRoleMutation.mutate,
+			teamMembershipsMap
+		]
 	)
 
 	const table = useReactTable({
@@ -526,6 +562,7 @@ export default function MembersList() {
 							</TableRow>
 						)}
 					</TableBody>
+					{/* TODO: We should hide the email in production. */}
 				</Table>
 			</div>
 
@@ -598,6 +635,73 @@ export default function MembersList() {
 							onClick={() => setManagingTeamsMember(null)}
 						>
 							Done
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Transfer Ownership confirmation dialog */}
+			<Dialog
+				open={!!transferringToMember}
+				onOpenChange={(open) => {
+					if (!open) setTransferringToMember(null)
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2">
+							<Crown className="h-5 w-5" />
+							Transfer Ownership
+						</DialogTitle>
+						<DialogDescription>
+							<strong>
+								{transferringToMember?.user.name ||
+									transferringToMember?.user.email}
+							</strong>{' '}
+							will become the new owner. You will become an admin. This requires
+							their cooperation to reverse.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setTransferringToMember(null)}
+							disabled={isTransferring}
+						>
+							Cancel
+						</Button>
+						<Button
+							disabled={isTransferring}
+							onClick={async () => {
+								if (!transferringToMember) return
+								const currentUserMember = members.find(
+									(m) => m.userId === session?.user?.id
+								)
+								if (!currentUserMember) return
+								try {
+									setIsTransferring(true)
+									await authClient.organization.updateMemberRole({
+										memberId: transferringToMember.id,
+										role: 'owner'
+									})
+									await authClient.organization.updateMemberRole({
+										memberId: currentUserMember.id,
+										role: 'admin'
+									})
+									queryClient.invalidateQueries({
+										queryKey: ['organization-members', activeOrg?.id]
+									})
+									setTransferringToMember(null)
+								} catch (err) {
+									// Error surfaces via changeRoleMutation error display above table
+									console.error('Transfer ownership failed:', err)
+									setTransferringToMember(null)
+								} finally {
+									setIsTransferring(false)
+								}
+							}}
+						>
+							{isTransferring ? 'Transferring…' : 'Transfer Ownership'}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

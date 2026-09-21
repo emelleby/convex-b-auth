@@ -2,6 +2,7 @@
 
 import { revalidateLogic } from '@tanstack/react-form'
 import { useQuery } from '@tanstack/react-query'
+import { useQuery as useConvexQuery, useMutation } from 'convex/react'
 import { UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -19,6 +20,7 @@ import {
 import { useAppForm } from '@/hooks/tanstack-form'
 import { focusFirstError } from '@/hooks/use-form'
 import { authClient } from '@/lib/auth-client'
+import { api } from '../../../convex/_generated/api'
 
 interface Team {
 	id: string
@@ -65,6 +67,16 @@ export default function InviteMemberDialog({
 		enabled: !!activeOrg?.id
 	})
 
+	// Fetch org invitation validity setting
+	const orgSettings = useConvexQuery(
+		api.orgSettings.getSettings,
+		activeOrg?.id ? { organizationId: activeOrg.id } : 'skip'
+	)
+
+	const patchInvitationExpiry = useMutation(
+		api.orgSettings.patchInvitationExpiry
+	)
+
 	const teamOptions =
 		teamsResponse?.data?.map((team: Team) => ({
 			label: team.name,
@@ -99,6 +111,24 @@ export default function InviteMemberDialog({
 				if (result?.error) {
 					toast.error(result.error.message ?? 'Failed to send invitation')
 					return
+				}
+
+				// Patch expiresAt to match org setting (Better Auth default is 48h)
+				const invitationId =
+					result && typeof result === 'object' && 'data' in result
+						? (result as { data?: { id?: string } }).data?.id
+						: undefined
+				const validityDays = orgSettings?.invitationValidityDays ?? 365
+				if (invitationId && validityDays && validityDays !== 2) {
+					const expiresAt = Date.now() + validityDays * 24 * 60 * 60 * 1000
+					try {
+						await patchInvitationExpiry({
+							invitationId,
+							expiresAt
+						})
+					} catch (patchErr) {
+						console.error('Failed to patch invitation expiry:', patchErr)
+					}
 				}
 
 				toast.success('Invitation sent successfully!')

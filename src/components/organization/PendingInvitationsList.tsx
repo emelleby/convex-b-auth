@@ -1,6 +1,7 @@
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
+import { useQuery } from 'convex/react'
 import { Mail, X } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -22,53 +23,30 @@ import {
 	TableRow
 } from '@/components/ui/table'
 import { authClient } from '@/lib/auth-client'
-
-type Invitation = {
-	id: string
-	email: string
-	role: string
-	organizationId: string
-	status: string
-	createdAt: Date | string | number
-	expiresAt: Date | string | number
-}
+import { api } from '../../../convex/_generated/api'
 
 export default function PendingInvitationsList() {
 	const { data: activeOrg } = authClient.useActiveOrganization()
-	const queryClient = useQueryClient()
 	const [cancelingId, setCancelingId] = useState<string | null>(null)
 
-	// Query: Fetch invitations using TanStack Query + Better-Auth API
-	const {
-		data: invitations,
-		isLoading,
-		error
-	} = useQuery({
-		queryKey: ['organization-invitations', activeOrg?.id],
-		queryFn: () =>
-			authClient.organization.listInvitations({
-				query: { organizationId: activeOrg?.id }
-			}),
-		enabled: !!activeOrg?.id,
-		select: (response) =>
-			((response.data as unknown as Invitation[]) ?? []).filter(
-				(inv) => inv.status === 'pending'
-			)
-	})
+	// Query: Fetch pending invitations using Convex
+	const invitations = useQuery(
+		api.invitations.listOrganizationPendingInvitations,
+		activeOrg?.id ? { organizationId: activeOrg.id } : 'skip'
+	)
 
 	// Mutation: Cancel invitation using Better-Auth API
 	const cancelMutation = useMutation({
 		mutationFn: (invitationId: string) =>
 			authClient.organization.cancelInvitation({ invitationId }),
 		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: ['organization-invitations', activeOrg?.id]
-			})
+			// Convex useQuery will auto-refresh when the mutation completes
 			setCancelingId(null)
 		}
 	})
 
-	if (isLoading) {
+	// Loading state: invitations is undefined while loading
+	if (invitations === undefined) {
 		return (
 			<div className="space-y-4">
 				<Skeleton className="h-12 w-full" />
@@ -89,9 +67,7 @@ export default function PendingInvitationsList() {
 		)
 	}
 
-	const errorMessage =
-		(cancelMutation.error as Error | null)?.message ??
-		(error as Error | null)?.message
+	const errorMessage = (cancelMutation.error as Error | null)?.message
 
 	return (
 		<div className="space-y-4">
